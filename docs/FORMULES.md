@@ -1,0 +1,139 @@
+# Financiële formules
+
+Dit document beschrijft precies hoe de Vermogensplanner rekent. Alle code staat in
+[`src/lib/finance.ts`](../src/lib/finance.ts) en [`src/lib/model.ts`](../src/lib/model.ts);
+de formules worden gecontroleerd door de tests in [`src/lib/finance.test.ts`](../src/lib/finance.test.ts).
+
+## 1. Notatie
+
+| Symbool | Betekenis |
+|---|---|
+| `P`   | Startinleg (beleggen) of startsaldo (sparen) |
+| `PMT` | Maandelijkse inleg |
+| `R`   | Effectief jaarrendement / jaarrente (als fractie, 7% → 0,07) |
+| `r`   | Equivalent maandpercentage |
+| `i`   | Gemiddelde jaarlijkse inflatie (fractie) |
+| `n`   | Looptijd in hele maanden |
+| `B_m` | Saldo aan het eind van maand `m` |
+
+## 2. Van jaar- naar maandrendement
+
+Het ingevoerde percentage is een **effectief** jaarpercentage. Het maandpercentage is
+het meetkundige (niet het rekenkundige) twaalfde deel:
+
+```
+r = (1 + R)^(1/12) − 1
+```
+
+Daardoor geldt exact `(1 + r)^12 = 1 + R`: een bedrag dat een jaar lang belegd is,
+groeit met precies het opgegeven jaarrendement. (Bij `r = R/12` zou 7% per jaar in
+werkelijkheid 7,23% opleveren.)
+
+Voor sparen wordt dezelfde conventie gebruikt: de opgegeven spaarrente is het effectieve
+jaarlijkse rendement, ongeacht of de bank maandelijks of jaarlijks rente bijschrijft.
+
+## 3. Maandelijkse simulatie
+
+De looptijd `n` is het aantal volle maanden tussen start- en einddatum (max. 100 jaar).
+Per maand `m = 0 … n−1`:
+
+```
+B ← B + PMT + E_m        (stortingen aan het begin van de maand)
+B ← B · (1 + r)          (groei over de maand)
+```
+
+met beginwaarde `B = P` en `E_m` de som van alle extra eenmalige stortingen in maand `m`.
+
+* **Maandelijkse inleg** wordt aan het *begin* van elke maand gestort (annuïteit
+  *vooruitbetaald*), dus de eerste inleg valt op de startdatum.
+* **Extra eenmalige stortingen** worden toegewezen aan de maand waarin hun datum valt,
+  gerekend vanaf de startdatum: `m = volle maanden(startdatum → stortingsdatum)`.
+  Stortingen vóór de startdatum of op/na de einddatum vallen buiten de looptijd; de UI
+  markeert ze en ze tellen niet mee.
+
+### Controle met de gesloten formule
+
+Zonder extra stortingen is de simulatie gelijk aan de bekende formule voor toekomstige
+waarde met vooruitbetaalde annuïteit:
+
+```
+FV = P·(1 + r)^n  +  PMT · [((1 + r)^n − 1) / r] · (1 + r)
+```
+
+(bij `r = 0`: `FV = P + PMT·n`). De test *“komt overeen met de gesloten annuïteitenformule”*
+verifieert dit tot op 6 decimalen.
+
+## 4. Resultaatgrootheden
+
+| Grootheid | Formule |
+|---|---|
+| Totale inleg | `P + n·PMT + Σ E_m` |
+| Eindvermogen / eindsaldo | `B_n` |
+| Behaald rendement / ontvangen rente (€) | `B_n − totale inleg` |
+| Rendement (%) | `(B_n − totale inleg) / totale inleg` |
+
+Het rendementspercentage is het **totale** rendement op het ingelegde geld over de hele
+looptijd (geen jaarlijks percentage): omdat inleg gespreid binnenkomt, is dit iets anders
+dan het jaarrendement.
+
+## 5. Inflatie en reële waarde
+
+De reële waarde drukt een toekomstig bedrag uit in euro’s van de startdatum
+(koopkrachtgecorrigeerd):
+
+```
+Reëel(t) = Nominaal(t) / (1 + i)^(t / 12)      (t in maanden)
+```
+
+* **Koopkrachtverlies** = nominaal − reëel.
+* **Koopkrachtverlies (%)** = `1 − 1/(1 + i)^(n/12)` (in de UI: verlies / nominaal).
+* “Wat nu € 1.000 kost, kost straks” = `1000 · (1 + i)^(n/12)`.
+
+Beleggen en sparen hebben elk een eigen inflatie-invoer; de totale reële waarde is de som
+van beide reële waarden.
+
+> Let op: “reëel t.o.v. inleg” vergelijkt de reële eindwaarde met de nominale som van
+> de inleg. Dat is een eenvoudige, conservatieve vuistregel – latere stortingen hebben
+> door inflatie in werkelijkheid ook minder koopkracht.
+
+## 6. Maandbudget
+
+Bij *automatisch verdelen* geldt, met budget `M` en aandeel beleggen `s` (0–100%):
+
+```
+PMT_beleggen = M · s
+PMT_sparen   = M · (1 − s)
+```
+
+## 7. Scenario’s
+
+Elk scenario past procentpunt-afwijkingen toe op de invoer en draait het volledige model
+opnieuw:
+
+| Scenario | Rendement | Spaarrente | Inflatie |
+|---|---|---|---|
+| Conservatief | −3 pp | −1 pp | +1 pp |
+| Realistisch | ±0 | ±0 | ±0 |
+| Optimistisch | +2 pp | +0,5 pp | −0,5 pp |
+
+De afwijkingen zijn in de app aan te passen (“Scenario-aannames aanpassen”).
+
+## 8. Inzichten
+
+* **Herkomst vermogen**: aandeel eigen inleg = `totale inleg / totaal vermogen`; de rest
+  komt uit rendement en rente.
+* **Hogere inleg (+10/+25/+50%)**: beide maandinleggen worden met de factor
+  vermenigvuldigd en het model wordt opnieuw doorgerekend. “Elke extra euro groeit uit tot”
+  = `Δ eindvermogen / Δ inleg` bij +10%.
+* **FIRE – 4%-regel**: duurzaam maandinkomen ≈ `reëel totaal vermogen × 4% / 12`.
+  Gebaseerd op de *Trinity-study*-vuistregel; geen garantie.
+* **Kantelpunt**: de eerste maand waarin de maandelijkse groei van de beleggingen
+  (`B · r`) groter is dan de maandelijkse inleg.
+
+## 9. Bewuste vereenvoudigingen
+
+* Constante gemiddelde rendementen; geen volatiliteit of volgorde-risico (*sequence of
+  returns*). Werkelijke rendementen schommelen.
+* Geen belasting (box 3), transactiekosten of fondskosten apart gemodelleerd – verwerk
+  kosten door een netto rendement in te voeren.
+* Maandinleg wordt niet geïndexeerd met inflatie.
