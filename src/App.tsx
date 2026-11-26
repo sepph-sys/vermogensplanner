@@ -17,14 +17,25 @@ import { ScenarioComparison } from './components/analysis/ScenarioComparison';
 import { Insights } from './components/analysis/Insights';
 import { Box3Overview } from './components/analysis/Box3Overview';
 import { Segmented } from './components/ui/Segmented';
-import { IconReset } from './components/ui/icons';
+import { Tabs, type TabDef } from './components/ui/Tabs';
+import { IconLayers, IconReset, IconScale, IconWallet } from './components/ui/icons';
+import { useHashTab } from './hooks/useHashTab';
 
 const STORAGE_KEY = 'vermogensplanner.state.v1';
+
+type TabId = 'dashboard' | 'inleg' | 'belasting';
+const TAB_IDS = ['dashboard', 'inleg', 'belasting'] as const;
+const TABS: TabDef<TabId>[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: <IconLayers /> },
+  { id: 'inleg', label: 'Inleg', icon: <IconWallet /> },
+  { id: 'belasting', label: 'Belasting', icon: <IconScale /> },
+];
 
 export function App() {
   const { mode, setMode, resolved } = useTheme();
   const [state, setState] = usePersistentState<PlannerState>(STORAGE_KEY, createSampleState, hydrateState);
   const colors = chartColors[resolved];
+  const [tab, setTab] = useHashTab<TabId>(TAB_IDS, 'dashboard');
 
   // Eén centrale berekening; alle onderdelen herberekenen direct bij elke wijziging.
   const model = useMemo(() => runModel(state), [state]);
@@ -38,6 +49,7 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="app-header">
       <header className="topbar">
         <div className="brand">
           <span className="brand-logo" aria-hidden="true">
@@ -67,43 +79,73 @@ export function App() {
         </div>
       </header>
 
-      <div className="layout">
-        <aside className="sidebar" aria-label="Invoer">
-          <PeriodPanel period={state.period} onChange={patch('period')} />
-          <BudgetPanel
-            budget={state.budget}
-            inflation={{ invest: state.invest.inflation, savings: state.savings.inflation }}
-            firstMonthly={model.monthlyInvest + model.monthlySavings}
-            lastMonthly={model.invest.finalMonthly + model.savings.finalMonthly}
-            months={model.invest.months}
-            colors={colors}
-            onChange={patch('budget')}
-          />
-          <InvestPanel
-            invest={state.invest}
-            monthly={model.monthlyInvest}
-            autoMonthly={state.budget.autoSplit}
-            startDate={state.period.startDate}
-            ignored={model.invest.ignoredDeposits}
-            onChange={patch('invest')}
-          />
-          <SavingsPanel savings={state.savings} monthly={model.monthlySavings} autoMonthly={state.budget.autoSplit} onChange={patch('savings')} />
-          <Box3Panel box3={state.box3} onChange={patch('box3')} />
-        </aside>
-
-        <main className="main">
-          <KpiRow model={model} colors={colors} />
-          <GrowthChart model={model} startDate={state.period.startDate} colors={colors} />
-          <ModuleResults model={model} colors={colors} />
-          <Box3Overview state={state} model={model} colors={colors} />
-          <ScenarioComparison state={state} colors={colors} onScenariosChange={patch('scenarios')} />
-          <Insights state={state} model={model} colors={colors} />
-          <footer className="footer">
-            Alle berekeningen vinden plaats in je browser; er worden geen gegevens verstuurd. Invoer wordt lokaal bewaard.
-            Dit is een rekenmodel met constante gemiddelde rendementen – werkelijke rendementen schommelen en resultaten uit het verleden bieden geen garantie voor de toekomst. Box 3 wordt vereenvoudigd berekend met spaargeld en beleggingen als enige bezittingen; fondskosten zijn niet apart gemodelleerd. Geen fiscaal advies.
-          </footer>
-        </main>
+      <nav className="tabbar">
+        <Tabs tabs={TABS} value={tab} onChange={setTab} />
+      </nav>
       </div>
+
+      <main className="page" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
+        {tab === 'dashboard' && (
+          <>
+            <PeriodPanel period={state.period} onChange={patch('period')} />
+            <KpiRow model={model} colors={colors} />
+            <GrowthChart model={model} startDate={state.period.startDate} colors={colors} />
+            <ModuleResults model={model} colors={colors} />
+            <Box3Overview state={state} model={model} colors={colors} />
+            <ScenarioComparison state={state} colors={colors} onScenariosChange={patch('scenarios')} />
+            <Insights state={state} model={model} colors={colors} />
+          </>
+        )}
+
+        {tab === 'inleg' && (
+          <>
+            <TabIntro title="Inleg" text="Maandbudget, verdeling tussen sparen en beleggen, indexatie en incidentele stortingen. Wijzigingen zie je direct terug in het dashboard." />
+            <KpiRow model={model} colors={colors} />
+            <div className="input-grid">
+              <BudgetPanel
+                budget={state.budget}
+                inflation={{ invest: state.invest.inflation, savings: state.savings.inflation }}
+                firstMonthly={model.monthlyInvest + model.monthlySavings}
+                lastMonthly={model.invest.finalMonthly + model.savings.finalMonthly}
+                months={model.invest.months}
+                colors={colors}
+                onChange={patch('budget')}
+              />
+              <InvestPanel
+                invest={state.invest}
+                monthly={model.monthlyInvest}
+                autoMonthly={state.budget.autoSplit}
+                startDate={state.period.startDate}
+                ignored={model.invest.ignoredDeposits}
+                onChange={patch('invest')}
+              />
+              <SavingsPanel savings={state.savings} monthly={model.monthlySavings} autoMonthly={state.budget.autoSplit} onChange={patch('savings')} />
+            </div>
+          </>
+        )}
+
+        {tab === 'belasting' && (
+          <>
+            <TabIntro title="Belasting" text="Instellingen voor box 3. Het effect op je vermogen staat in het dashboard." />
+            <KpiRow model={model} colors={colors} />
+            <Box3Panel box3={state.box3} onChange={patch('box3')} />
+          </>
+        )}
+
+        <footer className="footer">
+          Alle berekeningen vinden plaats in je browser; er worden geen gegevens verstuurd. Invoer wordt lokaal bewaard.
+          Dit is een rekenmodel met constante gemiddelde rendementen – werkelijke rendementen schommelen en resultaten uit het verleden bieden geen garantie voor de toekomst. Box 3 wordt vereenvoudigd berekend met spaargeld en beleggingen als enige bezittingen; fondskosten zijn niet apart gemodelleerd. Geen fiscaal advies.
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function TabIntro({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="tab-intro">
+      <h2>{title}</h2>
+      <p className="muted">{text}</p>
     </div>
   );
 }

@@ -68,21 +68,35 @@ Source: GitHub Actions**. De app staat daarna op
 
 ## Gebruik
 
-1. **Looptijd** – kies start- en einddatum, of een snelkeuze van 10–40 jaar.
-2. **Maandbudget** – vul je vrij besteedbare bedrag in en schuif de verdeling.
-   Zet de schakelaar uit om de maandinleg per module zelf in te vullen. Zet
-   *Maandinleg jaarlijks indexeren* aan om de inleg elk jaar te verhogen: laat
-   *Gelijk aan inflatie* aangevinkt, of vink het uit en vul een eigen percentage in.
-3. **Beleggen / Sparen** – vul startbedragen, rendement/rente en inflatie in en voeg
+De app heeft drie tabbladen (ook direct te openen via `#dashboard`, `#inleg` en
+`#belasting` achter de URL):
+
+**Dashboard**
+1. Kies bovenaan de **analyseperiode** (start- en einddatum, of 10–40 jaar). Die geldt
+   voor alle berekeningen.
+2. Bekijk de kerncijfers, de grafiek (schakel tussen *Nominaal* en *Reëel*, hover voor
+   details per maand), de resultaten per module en het box 3-overzicht.
+3. Vergelijk **scenario’s** en pas onder “Scenario-aannames aanpassen” de afwijkingen aan.
+4. Lees de **financiële inzichten**: herkomst van je vermogen, inflatie, FIRE en het
+   effect van een hogere inleg.
+
+**Inleg**
+1. **Maandbudget**: vul je vrij besteedbare bedrag in en schuif de verdeling. Zet de
+   schakelaar uit om de maandinleg per module zelf in te vullen. Zet *Maandinleg jaarlijks
+   indexeren* aan om de inleg elk jaar te verhogen: laat *Gelijk aan inflatie*
+   aangevinkt, of vink het uit en vul een eigen percentage in.
+2. **Beleggen / Sparen**: vul startbedragen, rendement/rente en inflatie in en voeg
    eventuele extra stortingen toe (bonus, erfenis, vakantiegeld). Stortingen buiten de
    looptijd worden rood gemarkeerd en niet meegeteld.
-4. Bekijk het **dashboard**, schakel de grafiek tussen *Nominaal* en *Reëel* en hover
-   voor details per maand.
-5. Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. Pas
-   de grondslagwaarden per periode aan, of voeg een periode toe als de regels wijzigen.
-   Een periode geldt vanaf haar jaar tot de volgende periode.
-6. Vergelijk **scenario’s** en pas onder “Scenario-aannames aanpassen” de afwijkingen aan.
-7. Met **Voorbeelddata** (rechtsboven) zet je alles terug naar het voorbeeld.
+
+**Belasting**
+- Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. Pas
+  de grondslagwaarden per periode aan, of voeg een periode toe als de regels wijzigen.
+  Een periode geldt vanaf haar jaar tot de volgende periode.
+
+Bovenaan de tabbladen Inleg en Belasting staan de kerncijfers, zodat je het effect van
+een wijziging direct ziet. Met **Voorbeelddata** (rechtsboven) zet je alles terug naar
+het voorbeeld.
 
 Getallen mogen in Nederlandse (`10.000`, `7,5`) of internationale notatie (`7.5`)
 worden ingevoerd. Pijltje omhoog/omlaag verhoogt/verlaagt, met Shift in stappen van 10.
@@ -108,11 +122,12 @@ vermogensplanner/
     │   ├── format.ts          # nl-NL valuta/percentage-notatie en invoerparser
     │   └── chartTheme.ts      # Grafiekkleuren per thema
     ├── hooks/
+    │   ├── useHashTab.ts      # Actief tabblad ↔ URL-hash
     │   ├── usePersistentState.ts
     │   └── useTheme.ts
     └── components/
-        ├── ui/                # Card, Stat, NumberField, DateField, Segmented, iconen
-        ├── inputs/            # Looptijd, Maandbudget, Beleggen, Sparen, Box 3
+        ├── ui/                # Card, Stat, Tabs, NumberField, DateField, Segmented, iconen
+        ├── inputs/            # Analyseperiode, Maandbudget, Beleggen, Sparen, Box 3
         ├── dashboard/         # KPI-rij, groeigrafiek, resultaten per module
         └── analysis/          # Scenario's, inzichten, box 3-overzicht
 ```

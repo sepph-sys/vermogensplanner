@@ -106,18 +106,23 @@ small,
 }
 
 /* ---------- Topbar ---------- */
-.topbar {
+/* Kopbalk + tabbalk blijven samen bovenaan staan */
+.app-header {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+}
+
+.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 24px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(10px);
-  border-bottom: 1px solid var(--border);
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 12px 24px 6px;
 }
 
 .brand {
@@ -151,66 +156,147 @@ small,
   gap: 8px;
 }
 
-/* ---------- Layout ---------- */
-.layout {
-  display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+/* ---------- Tabs ---------- */
+.tabbar {
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 11px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.9rem;
+  font-weight: 550;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent-solid);
+  font-weight: 650;
+}
+
+.tab:focus-visible {
+  outline-offset: -2px;
+  border-radius: 6px 6px 0 0;
+}
+
+/* ---------- Page ---------- */
+.page {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   max-width: 1480px;
   margin: 0 auto;
   padding: 20px 24px 40px;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-self: start;
-  position: sticky;
-  top: 76px;
-  max-height: calc(100vh - 92px);
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
-}
-
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
   min-width: 0;
 }
 
-@media (max-width: 1080px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sidebar {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
+.tab-intro h2 {
+  font-size: 1.25rem;
+}
+
+.tab-intro p {
+  margin: 4px 0 0;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+/* Analyseperiode als filterbalk */
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  padding: 14px 20px;
+}
+
+.filter-bar-title {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-right: auto;
+}
+
+.filter-bar-title h2 {
+  font-size: 1rem;
+}
+
+.filter-bar-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 180px));
+  gap: 12px;
+}
+
+.filter-bar-chips {
+  margin-top: 0;
+  padding-bottom: 4px;
+}
+
+.filter-bar-notice {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 @media (max-width: 640px) {
-  .layout {
+  .page {
     padding: 16px 16px 32px;
     gap: 16px;
   }
-  .topbar {
+  .app-header {
     position: static;
+  }
+  .topbar {
     flex-wrap: wrap;
-    padding: 10px 16px;
+    padding: 10px 16px 4px;
   }
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
   }
-  .sidebar {
+  .tabs {
+    padding: 0 8px;
+  }
+  .tab {
+    flex: 1;
+    justify-content: center;
+  }
+  .input-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .filter-bar-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
   }
   .hide-sm {
     display: none;
@@ -446,8 +532,8 @@ small,
 }
 
 .periods {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 12px;
 }
 
