@@ -7,7 +7,7 @@ import { IconPlus, IconReset, IconScale, IconTrash, IconWarn } from '../ui/icons
 
 interface Props {
   box3: Box3Config;
-  /** Inflatie-aanname (beleggen) voor de indexatie van heffingsvrije bedragen. */
+  /** Generieke inflatie voor de indexatie van heffingsvrije bedragen. */
   inflation: number;
   onChange: (b: Box3Config) => void;
 }
@@ -65,7 +65,7 @@ export function Box3Panel({ box3, inflation, onChange }: Props) {
           </label>
           <p className="field-hint checkbox-hint">
             Jaren na de laatste periode gebruiken de waarden van die periode
-            {box3.indexExemptions ? `; het heffingsvrij vermogen/resultaat stijgt met de inflatie van beleggen (${formatNumber(inflation)}% per jaar).` : ', zonder indexatie.'}
+            {box3.indexExemptions ? `; het heffingsvrij vermogen/resultaat stijgt met de inflatie (${formatNumber(inflation)}% per jaar, of de waarde per jaar uit Rendement & inflatie).` : ', zonder indexatie.'}
           </p>
         </div>
 

@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { runModel, type ModelResult, type PlannerState } from '../../lib/model';
 import type { ChartColors } from '../../lib/chartTheme';
 import { addMonths, formatMonth } from '../../lib/dates';
-import { inflationFactor } from '../../lib/finance';
-import { formatDuration, formatEUR, formatEURSigned, formatPct } from '../../lib/format';
+import { formatDuration, formatEUR, formatEURSigned, formatNumber, formatPct } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { IconBulb } from '../ui/icons';
 
@@ -25,7 +24,11 @@ export function Insights({ state, model, colors }: Props) {
   const ownShare = totals.final > 0 ? totals.contributed / totals.final : 0;
   const growthShare = 1 - ownShare;
   const purchasingPowerLoss = totals.final > 0 ? totals.inflationLoss / totals.final : 0;
-  const thousandToday = 1000 * inflationFactor(state.invest.inflation, months);
+  // Prijsindex over de looptijd (houdt rekening met inflatie per jaar).
+  const priceIndex = model.invest.priceIndex;
+  const thousandToday = 1000 * priceIndex;
+  const avgInflation = months > 0 ? Math.pow(priceIndex, 12 / months) - 1 : 0;
+  const perYear = state.assumptions.years.some((y) => y.inflation !== null);
 
   // Effect van hogere maandelijkse inleg (op beide modules).
   const boosts = useMemo(
@@ -68,7 +71,7 @@ export function Insights({ state, model, colors }: Props) {
             <div><dt>Verlies aan koopkracht</dt><dd className="tone-negative">{formatEURSigned(-totals.inflationLoss)} <small>{formatPct(purchasingPowerLoss)}</small></dd></div>
           </dl>
           <p className="muted small">
-            Bij {state.invest.inflation.toLocaleString('nl-NL')}% inflatie kost wat nu € 1.000 kost over {formatDuration(months)} ongeveer {formatEUR(thousandToday)}.
+            Bij {perYear ? 'gemiddeld ' : ''}{formatNumber(avgInflation * 100)}% inflatie per jaar kost wat nu € 1.000 kost over {formatDuration(months)} ongeveer {formatEUR(thousandToday)}.
           </p>
         </div>
 

@@ -22,27 +22,55 @@ export interface BudgetState {
   autoSplit: boolean;
   /** Maandinleg jaarlijks indexeren (geldt voor beide modules). */
   indexEnabled: boolean;
-  /** Indexatie gelijk aan de inflatie van de betreffende module. */
+  /** Indexatie gelijk aan de inflatie (incl. afwijkingen per jaar). */
   indexFollowsInflation: boolean;
   /** Eigen indexatiepercentage per jaar (alleen als niet gelijk aan inflatie). */
   indexRate: number;
 }
 
 export interface InvestState {
+  /** Startinleg op de startdatum. */
   initial: number;
+  /** Handmatige maandinleg (alleen als het budget niet automatisch verdeelt). */
   monthly: number;
-  annualReturn: number;
-  inflation: number;
+  /** Extra eenmalige beleggingen. */
   deposits: Deposit[];
 }
 
 export interface SavingsState {
+  /** Startsaldo op de startdatum. */
   initial: number;
+  /** Handmatige maandinleg (alleen als het budget niet automatisch verdeelt). */
   monthly: number;
-  annualRate: number;
-  inflation: number;
   /** Extra eenmalige stortingen op de spaarrekening. */
   deposits: Deposit[];
+}
+
+/**
+ * Afwijkende waarden voor één kalenderjaar. `null` = geen afwijking, dan
+ * geldt de generieke waarde.
+ */
+export interface YearAssumption {
+  id: string;
+  year: number;
+  annualReturn: number | null;
+  savingsRate: number | null;
+  inflation: number | null;
+}
+
+/**
+ * Rendement, spaarrente en inflatie: één bron voor de hele app. Elk
+ * invoerveld leest en schrijft deze waarden, zodat ze overal gelijk zijn.
+ */
+export interface AssumptionsState {
+  /** Generiek effectief jaarrendement beleggen (%). */
+  annualReturn: number;
+  /** Generieke spaarrente (%). */
+  savingsRate: number;
+  /** Generieke inflatie (%). */
+  inflation: number;
+  /** Afwijkingen per kalenderjaar. */
+  years: YearAssumption[];
 }
 
 export interface ScenarioDef {
@@ -59,6 +87,7 @@ export interface PlannerState {
   budget: BudgetState;
   invest: InvestState;
   savings: SavingsState;
+  assumptions: AssumptionsState;
   scenarios: ScenarioDef[];
   box3: Box3Config;
 }
@@ -106,23 +135,48 @@ export function effectiveMonthly(state: PlannerState): { invest: number; savings
   return { invest: state.invest.monthly, savings: state.savings.monthly };
 }
 
+/** Rendement, spaarrente en inflatie als functie van het kalenderjaar. */
+export interface YearRates {
+  annualReturn: (year: number) => number;
+  savingsRate: (year: number) => number;
+  inflation: (year: number) => number;
+}
+
 /**
- * Jaarlijkse indexatie per module. Bij 'gelijk aan inflatie' volgt elke module
- * haar eigen inflatie-aanname (inclusief scenario-afwijking), zodat de inleg
- * in reële termen constant blijft.
+ * Waarden per kalenderjaar: de afwijking uit de jaartabel als die is
+ * ingevuld, anders de generieke waarde; plus de scenario-afwijking.
  */
-export function indexationRates(state: PlannerState, o: ModelOverrides = {}): { invest: number; savings: number } {
+export function yearRates(a: AssumptionsState, o: ModelOverrides = {}): YearRates {
+  const byYear = new Map(a.years.map((y) => [y.year, y]));
+  const pick = (key: 'annualReturn' | 'savingsRate' | 'inflation', generic: number, delta = 0) => (year: number) => {
+    const v = byYear.get(year)?.[key];
+    return (v ?? generic) + delta;
+  };
+  return {
+    annualReturn: pick('annualReturn', a.annualReturn, o.returnDelta),
+    savingsRate: pick('savingsRate', a.savingsRate, o.savingsDelta),
+    inflation: pick('inflation', a.inflation, o.inflationDelta),
+  };
+}
+
+/**
+ * Jaarlijkse indexatie van de maandinleg. Bij 'gelijk aan inflatie' volgt de
+ * indexatie de inflatie per jaar (inclusief scenario-afwijking), zodat de
+ * inleg in reële termen constant blijft. `generic` is het percentage voor
+ * labels (generieke waarde).
+ */
+export function indexation(state: PlannerState, rates: YearRates, o: ModelOverrides = {}) {
   const b = state.budget;
-  if (!b.indexEnabled) return { invest: 0, savings: 0 };
-  if (!b.indexFollowsInflation) return { invest: b.indexRate, savings: b.indexRate };
-  const d = o.inflationDelta ?? 0;
-  return { invest: state.invest.inflation + d, savings: state.savings.inflation + d };
+  if (!b.indexEnabled) return { fn: 0 as number | ((y: number) => number), generic: 0 };
+  if (!b.indexFollowsInflation) return { fn: b.indexRate as number | ((y: number) => number), generic: b.indexRate };
+  return { fn: rates.inflation, generic: state.assumptions.inflation + (o.inflationDelta ?? 0) };
 }
 
 export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResult {
   const f = o.monthlyFactor ?? 1;
   const m = effectiveMonthly(state);
-  const idx = indexationRates(state, o);
+  const rates = yearRates(state.assumptions, o);
+  const idx = indexation(state, rates, o);
   const { startDate, endDate } = state.period;
 
   const { invest, savings, taxYears } = simulatePlan(
@@ -132,18 +186,18 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
       kind: 'invest',
       initial: state.invest.initial,
       monthly: m.invest * f,
-      annualRate: state.invest.annualReturn + (o.returnDelta ?? 0),
-      inflation: state.invest.inflation + (o.inflationDelta ?? 0),
-      indexation: idx.invest,
+      annualRate: rates.annualReturn,
+      inflation: rates.inflation,
+      indexation: idx.fn,
       deposits: state.invest.deposits,
     },
     {
       kind: 'savings',
       initial: state.savings.initial,
       monthly: m.savings * f,
-      annualRate: state.savings.annualRate + (o.savingsDelta ?? 0),
-      inflation: state.savings.inflation + (o.inflationDelta ?? 0),
-      indexation: idx.savings,
+      annualRate: rates.savingsRate,
+      inflation: rates.inflation,
+      indexation: idx.fn,
       deposits: state.savings.deposits,
     },
     o.noTax ? undefined : state.box3,
@@ -156,8 +210,8 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
   return {
     monthlyInvest: m.invest * f,
     monthlySavings: m.savings * f,
-    indexInvest: idx.invest,
-    indexSavings: idx.savings,
+    indexInvest: idx.generic,
+    indexSavings: idx.generic,
     invest,
     savings,
     taxYears,
@@ -196,41 +250,62 @@ export function createSampleState(): PlannerState {
     invest: {
       initial: 10000,
       monthly: 700,
-      annualReturn: 7,
-      inflation: 2.5,
       deposits: [
         { id: 'd1', date: `${y + 3}-06-01`, amount: 5000, label: 'Bonus' },
         { id: 'd2', date: `${y + 10}-01-01`, amount: 20000, label: 'Erfenis' },
       ],
     },
-    savings: { initial: 15000, monthly: 300, annualRate: 2, inflation: 2.5, deposits: [] },
+    savings: { initial: 15000, monthly: 300, deposits: [] },
+    assumptions: { annualReturn: 7, savingsRate: 2, inflation: 2.5, years: [] },
     scenarios: DEFAULT_SCENARIOS.map((s) => ({ ...s })),
     box3: createDefaultBox3(),
   };
 }
 
+const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+
 /**
  * Valideert/merget een opgeslagen state met de standaardwaarden, zodat een
  * oude of beschadigde localStorage-entry de app nooit laat crashen.
+ * Oudere versies bewaarden rendement, rente en inflatie per module; die
+ * worden omgezet naar het gezamenlijke `assumptions`-blok.
  */
 export function hydrateState(raw: unknown): PlannerState {
   const base = createSampleState();
   if (!raw || typeof raw !== 'object') return base;
-  const r = raw as Partial<PlannerState>;
+  const r = raw as Partial<PlannerState> & {
+    invest?: Partial<InvestState> & { annualReturn?: number; inflation?: number };
+    savings?: Partial<SavingsState> & { annualRate?: number; inflation?: number };
+  };
   const scenarios = Array.isArray(r.scenarios) && r.scenarios.length === 3 ? r.scenarios : base.scenarios;
+  const legacy: AssumptionsState = {
+    annualReturn: num(r.invest?.annualReturn, base.assumptions.annualReturn),
+    savingsRate: num(r.savings?.annualRate, base.assumptions.savingsRate),
+    inflation: num(r.invest?.inflation, base.assumptions.inflation),
+    years: [],
+  };
+  const a = r.assumptions;
   return {
     period: { ...base.period, ...r.period },
     budget: { ...base.budget, ...r.budget },
     invest: {
-      ...base.invest,
-      ...r.invest,
+      initial: num(r.invest?.initial, base.invest.initial),
+      monthly: num(r.invest?.monthly, base.invest.monthly),
       deposits: Array.isArray(r.invest?.deposits) ? r.invest!.deposits : base.invest.deposits,
     },
     savings: {
-      ...base.savings,
-      ...r.savings,
+      initial: num(r.savings?.initial, base.savings.initial),
+      monthly: num(r.savings?.monthly, base.savings.monthly),
       deposits: Array.isArray(r.savings?.deposits) ? r.savings!.deposits : r.savings ? [] : base.savings.deposits,
     },
+    assumptions: a
+      ? {
+          annualReturn: num(a.annualReturn, legacy.annualReturn),
+          savingsRate: num(a.savingsRate, legacy.savingsRate),
+          inflation: num(a.inflation, legacy.inflation),
+          years: Array.isArray(a.years) ? a.years : [],
+        }
+      : legacy,
     scenarios,
     box3: {
       ...base.box3,

@@ -17,7 +17,25 @@ de formules worden gecontroleerd door de tests in [`src/lib/finance.test.ts`](..
 | `n`   | Looptijd in hele maanden |
 | `B_m` | Saldo aan het eind van maand `m` |
 
-## 2. Van jaar- naar maandrendement
+## 2. Aannames: één bron, generiek en per jaar
+
+Rendement beleggen `R`, spaarrente `R_s` en inflatie `i` bestaan één keer in de app
+(tabblad *Rendement & inflatie*). Elk veld dat ze toont, leest en schrijft dezelfde
+waarde, en alle berekeningen gebruiken die waarde.
+
+Per kalenderjaar `y` geldt:
+
+```
+R(y)   = R_jaar(y)   als ingevuld in de jaartabel, anders R_generiek
+R_s(y) = R_s,jaar(y) als ingevuld,                 anders R_s,generiek
+i(y)   = i_jaar(y)   als ingevuld,                 anders i_generiek
+```
+
+Elke kolom valt afzonderlijk terug op de generieke waarde. Scenario’s tellen hun
+afwijking (procentpunten) op bij de waarde van elk jaar. Het kalenderjaar van maand `m`
+is het jaar van de begindatum van die maand.
+
+## 2a. Van jaar- naar maandrendement
 
 Het ingevoerde percentage is een **effectief** jaarpercentage. Het maandpercentage is
 het meetkundige (niet het rekenkundige) twaalfde deel:
@@ -89,15 +107,19 @@ De reële waarde drukt een toekomstig bedrag uit in euro’s van de startdatum
 (koopkrachtgecorrigeerd):
 
 ```
-Reëel(t) = Nominaal(t) / (1 + i)^(t / 12)      (t in maanden)
+D_0 = 1,   D_{m+1} = D_m · (1 + i(y_m))^(1/12)      (prijsindex)
+Reëel(t) = Nominaal(t) / D_t
 ```
 
-* **Koopkrachtverlies** = nominaal − reëel.
-* **Koopkrachtverlies (%)** = `1 − 1/(1 + i)^(n/12)` (in de UI: verlies / nominaal).
-* “Wat nu € 1.000 kost, kost straks” = `1000 · (1 + i)^(n/12)`.
+Bij constante inflatie is `D_t = (1 + i)^(t/12)`.
 
-Beleggen en sparen hebben elk een eigen inflatie-invoer; de totale reële waarde is de som
-van beide reële waarden.
+* **Koopkrachtverlies** = nominaal − reëel.
+* **Koopkrachtverlies (%)** = verlies / nominaal.
+* “Wat nu € 1.000 kost, kost straks” = `1000 · D_n`; de UI toont daarbij de gemiddelde
+  inflatie `D_n^(12/n) − 1`.
+
+Beleggen en sparen gebruiken dezelfde inflatie; de totale reële waarde is de som van
+beide reële waarden.
 
 > Let op: “reëel t.o.v. inleg” vergelijkt de reële eindwaarde met de nominale som van
 > de inleg. Dat is een eenvoudige, conservatieve vuistregel – latere stortingen hebben
@@ -116,9 +138,10 @@ PMT_sparen   = M · (1 − s)
 
 Met *Maandinleg jaarlijks indexeren* stijgt de maandinleg van beide modules elk jaar:
 
-* **Gelijk aan inflatie** (aangevinkt): `g` = de inflatie-aanname van de betreffende
-  module (beleggen en sparen elk hun eigen inflatie, inclusief scenario-afwijking). De
-  inleg blijft daarmee in reële termen constant.
+* **Gelijk aan inflatie** (aangevinkt): op de `j`-de verjaardag van de startdatum is
+  `g_j` = de inflatie van het kalenderjaar waarin maand `12j − 1` valt (inclusief
+  afwijkingen per jaar en scenario-afwijking). De maandinleg in looptijdjaar `k` is dan
+  `PMT · Π_{j=1..k} (1 + g_j)`, en blijft in reële termen ongeveer constant.
 * **Eigen percentage** (niet aangevinkt): `g` = het ingevulde percentage, voor beide
   modules gelijk.
 
@@ -163,10 +186,10 @@ gebruiken de eerste). Zo wordt elk jaar van de forecast belast.
 
 **Indexatie na de laatste periode** (optie, standaard aan): voor jaren na het laatst
 opgegeven jaar `Y₀` worden het heffingsvrij vermogen en het heffingsvrij resultaat
-geïndexeerd met de inflatie-aanname van beleggen `i` (inclusief scenario-afwijking):
+geïndexeerd met de inflatie per jaar `i(y)` (inclusief scenario-afwijking):
 
 ```
-vrijstelling_Y = vrijstelling_Y₀ · (1 + i)^(Y − Y₀)
+vrijstelling_Y = vrijstelling_Y₀ · Π_{y = Y₀+1 … Y} (1 + i(y))
 ```
 
 Tarief, forfaits en verliesdrempel blijven gelijk aan de laatste periode. In de tabel

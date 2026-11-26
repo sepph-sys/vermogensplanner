@@ -7,12 +7,11 @@ Alle berekeningen gebeuren in de browser; er is geen backend en er wordt niets v
 
 ## Functies
 
-- **Beleggen** – start- en einddatum, startinleg, maandelijkse inleg, onbeperkt aantal
-  extra eenmalige stortingen (datum + bedrag + omschrijving), jaarrendement en inflatie.
-  Eenmalige stortingen kunnen ook naar de spaarrekening.
-  Toont totale inleg, behaald rendement (€ en %), eindvermogen en reële eindwaarde.
-- **Sparen** – startsaldo, maandelijkse inleg, spaarrente en inflatie. Toont totale
-  inleg, ontvangen rente, eindsaldo en reële eindwaarde.
+- **Beleggen en sparen** – startinleg/startsaldo, maandelijkse inleg en onbeperkt veel
+  eenmalige stortingen (datum, bedrag, omschrijving) voor beide modules in één tabel.
+  Toont per module totale inleg, rendement/rente (€ en %), eindwaarde en reële eindwaarde.
+- **Rendement & inflatie** – één generiek rendement, spaarrente en inflatie voor de hele
+  app, met optionele afwijkende waarden per kalenderjaar.
 - **Maandbudget** – één vrij besteedbaar maandbedrag dat via slider, percentage of
   snelkeuzes (80/20, 70/30, …) over beleggen en sparen wordt verdeeld. Alles herberekent
   direct. Uit te zetten voor handmatige invoer per module.
@@ -69,8 +68,8 @@ Source: GitHub Actions**. De app staat daarna op
 
 ## Gebruik
 
-De app heeft drie tabbladen (ook direct te openen via `#dashboard`, `#inleg` en
-`#belasting` achter de URL):
+De app heeft vier tabbladen (ook direct te openen via `#dashboard`, `#inleg`,
+`#rendement` en `#belasting` achter de URL):
 
 **Dashboard**
 1. Kies bovenaan de **analyseperiode** (start- en einddatum, of 10–40 jaar). Die geldt
@@ -82,22 +81,29 @@ De app heeft drie tabbladen (ook direct te openen via `#dashboard`, `#inleg` en
    effect van een hogere inleg.
 
 **Inleg**
-1. **Maandbudget**: vul je vrij besteedbare bedrag in en schuif de verdeling. Zet de
-   schakelaar uit om de maandinleg per module zelf in te vullen. Zet *Maandinleg jaarlijks
-   indexeren* aan om de inleg elk jaar te verhogen: laat *Gelijk aan inflatie*
-   aangevinkt, of vink het uit en vul een eigen percentage in.
-2. **Beleggen / Sparen**: vul startbedragen, rendement/rente en inflatie in.
-3. **Eenmalige stortingen**: één tabel voor beleggen én sparen (bonus, erfenis,
-   vakantiegeld). Per regel kies je de bestemming, datum, bedrag en omschrijving; onderaan
-   staat het totaal per bestemming. Stortingen buiten de looptijd worden rood gemarkeerd en
-   niet meegeteld.
+1. **Maandbudget**: vul je vrij besteedbare bedrag in en schuif de verdeling. Zet
+   *Verdeel automatisch* uit om de maandinleg voor beleggen en sparen zelf in te vullen.
+   Zet *Maandinleg jaarlijks indexeren* aan om de inleg elk jaar te verhogen: laat
+   *Gelijk aan inflatie* aangevinkt, of vink het uit en vul een eigen percentage in.
+2. **Eenmalige inleg**: bovenaan twee vaste regels voor de **startinleg beleggen** en het
+   **startsaldo sparen** (op de startdatum). Daaronder extra stortingen (bonus, erfenis,
+   vakantiegeld) voor beleggen én sparen; per regel kies je bestemming, datum, bedrag en
+   omschrijving. Onderaan staat het totaal per bestemming. Stortingen buiten de looptijd
+   worden rood gemarkeerd en niet meegeteld.
+
+**Rendement & inflatie**
+1. Bovenaan de **generieke** waarden: jaarrendement beleggen, spaarrente en inflatie. Deze
+   gelden overal in de app (reële waarde, indexatie, box 3, scenario’s).
+2. In de tabel **Waarden per jaar** vul je desgewenst per kalenderjaar een afwijkende
+   waarde in. Een leeg veld betekent: generieke waarde. Met *Alle jaren looptijd* maak je
+   in één keer een regel voor elk jaar van de looptijd.
 
 **Belasting**
 - Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. De
   grondslagwaarden staan in een tabel met één regel per periode (kolommen die niet bij het
   gekozen stelsel horen tonen ‘–’). Voeg een regel toe als de regels wijzigen.
   Een periode geldt vanaf haar jaar tot de volgende periode; jaren daarna gebruiken de
-  laatste periode, met (optioneel) geïndexeerde heffingsvrije bedragen.
+  laatste periode, met (optioneel) met inflatie geïndexeerde heffingsvrije bedragen.
 
 Met **Voorbeelddata** (rechtsboven) zet je alles terug naar
 het voorbeeld.
@@ -131,16 +137,17 @@ vermogensplanner/
     │   └── useTheme.ts
     └── components/
         ├── ui/                # Card, Stat, Tabs, NumberField, DateField, Segmented, iconen
-        ├── inputs/            # Analyseperiode, Maandbudget, Beleggen, Sparen, stortingen, Box 3
+        ├── inputs/            # Analyseperiode, Maandbudget, Eenmalige inleg, Rendement & inflatie, Box 3
         ├── dashboard/         # KPI-rij, groeigrafiek, resultaten per module
         └── analysis/          # Scenario's, inzichten, box 3-overzicht
 ```
 
 ## Rekenmodel in het kort
 
-Maandelijkse simulatie met samengestelde rente. Het effectieve jaarpercentage `R` wordt
-omgezet naar `r = (1+R)^(1/12) − 1`; maandinleg wordt aan het begin van elke maand
-gestort; reële waarde = nominaal / `(1+i)^(maanden/12)`. Zie
+Maandelijkse simulatie met samengestelde rente. Het effectieve jaarpercentage `R` (per
+kalenderjaar) wordt omgezet naar `r = (1+R)^(1/12) − 1`; maandinleg wordt aan het begin
+van elke maand gestort; reële waarde = nominaal / prijsindex (opgebouwd uit de inflatie
+per jaar). Zie
 [`docs/FORMULES.md`](docs/FORMULES.md) voor alle formules, conventies en
 vereenvoudigingen.
 

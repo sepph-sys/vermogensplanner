@@ -3,8 +3,11 @@ import { formatNumber, parseUserNumber } from '../../lib/format';
 
 interface NumberFieldProps {
   label: string;
-  value: number;
+  /** `null` = leeg veld (alleen zinvol samen met `onClear`). */
+  value: number | null;
   onChange: (v: number) => void;
+  /** Als gezet mag het veld leeg zijn; leegmaken roept dit aan. */
+  onClear?: () => void;
   prefix?: string;
   suffix?: string;
   min?: number;
@@ -45,20 +48,23 @@ export function NumberField({
   placeholder,
   noGrouping,
   hideLabel,
+  onClear,
 }: NumberFieldProps) {
   const id = useId();
+  const fmt = (v: number | null) => (v === null ? '' : formatNumber(v, decimals, !noGrouping));
   const [focused, setFocused] = useState(false);
-  const [text, setText] = useState(() => formatNumber(value, decimals, !noGrouping));
+  const [text, setText] = useState(() => fmt(value));
 
   // Externe wijzigingen (bv. door de budgetslider) doorvoeren als het veld niet actief is.
   useEffect(() => {
-    if (!focused) setText(formatNumber(value, decimals, !noGrouping));
+    if (!focused) setText(fmt(value));
   }, [value, decimals, focused, noGrouping]);
 
   const clamp = (n: number) => Math.min(Math.max(n, min), max);
 
   const commit = (raw: string) => {
     setText(raw);
+    if (onClear && raw.trim() === '') return onClear();
     const n = parseUserNumber(raw);
     if (n !== null) onChange(clamp(n));
   };
@@ -67,9 +73,9 @@ export function NumberField({
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     e.preventDefault();
     const delta = (e.key === 'ArrowUp' ? 1 : -1) * step * (e.shiftKey ? 10 : 1);
-    const next = clamp(Math.round((value + delta) * 1e6) / 1e6);
+    const next = clamp(Math.round(((value ?? 0) + delta) * 1e6) / 1e6);
     onChange(next);
-    setText(formatNumber(next, decimals, !noGrouping));
+    setText(fmt(next));
   };
 
   return (
@@ -88,7 +94,7 @@ export function NumberField({
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
-            setText(formatNumber(value, decimals, !noGrouping));
+            setText(fmt(value));
           }}
           onChange={(e) => commit(e.target.value)}
           onKeyDown={onKeyDown}

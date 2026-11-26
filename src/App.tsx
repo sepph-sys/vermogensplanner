@@ -7,9 +7,8 @@ import { formatDate } from './lib/dates';
 import { formatDuration } from './lib/format';
 import { PeriodPanel } from './components/inputs/PeriodPanel';
 import { BudgetPanel } from './components/inputs/BudgetPanel';
-import { InvestPanel } from './components/inputs/InvestPanel';
 import { DepositsTable } from './components/inputs/DepositsTable';
-import { SavingsPanel } from './components/inputs/SavingsPanel';
+import { AssumptionsPanel } from './components/inputs/AssumptionsPanel';
 import { Box3Panel } from './components/inputs/Box3Panel';
 import { KpiRow } from './components/dashboard/KpiRow';
 import { GrowthChart } from './components/dashboard/GrowthChart';
@@ -19,16 +18,17 @@ import { Insights } from './components/analysis/Insights';
 import { Box3Overview } from './components/analysis/Box3Overview';
 import { Segmented } from './components/ui/Segmented';
 import { Tabs, type TabDef } from './components/ui/Tabs';
-import { IconLayers, IconReset, IconScale, IconWallet } from './components/ui/icons';
+import { IconLayers, IconPercent, IconReset, IconScale, IconWallet } from './components/ui/icons';
 import { useHashTab } from './hooks/useHashTab';
 
 const STORAGE_KEY = 'vermogensplanner.state.v1';
 
-type TabId = 'dashboard' | 'inleg' | 'belasting';
-const TAB_IDS = ['dashboard', 'inleg', 'belasting'] as const;
+type TabId = 'dashboard' | 'inleg' | 'rendement' | 'belasting';
+const TAB_IDS = ['dashboard', 'inleg', 'rendement', 'belasting'] as const;
 const TABS: TabDef<TabId>[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IconLayers /> },
   { id: 'inleg', label: 'Inleg', icon: <IconWallet /> },
+  { id: 'rendement', label: 'Rendement & inflatie', icon: <IconPercent /> },
   { id: 'belasting', label: 'Belasting', icon: <IconScale /> },
 ];
 
@@ -100,35 +100,45 @@ export function App() {
 
         {tab === 'inleg' && (
           <>
-            <TabIntro title="Inleg" text="Maandbudget, verdeling tussen sparen en beleggen, indexatie en incidentele stortingen. Wijzigingen zie je direct terug in het dashboard." />
-            <div className="input-grid">
+            <TabIntro title="Inleg" text="Maandbudget, verdeling tussen sparen en beleggen, indexatie, startbedragen en eenmalige stortingen. Wijzigingen zie je direct terug in het dashboard." />
+            <div className="inleg-grid">
               <BudgetPanel
                 budget={state.budget}
-                inflation={{ invest: state.invest.inflation, savings: state.savings.inflation }}
+                inflation={state.assumptions.inflation}
+                inflationPerYear={state.assumptions.years.some((y) => y.inflation !== null)}
+                manual={{ invest: state.invest.monthly, savings: state.savings.monthly }}
+                onManualChange={(m) => setState((s) => ({ ...s, invest: { ...s.invest, monthly: m.invest }, savings: { ...s.savings, monthly: m.savings } }))}
                 firstMonthly={model.monthlyInvest + model.monthlySavings}
                 lastMonthly={model.invest.finalMonthly + model.savings.finalMonthly}
                 months={model.invest.months}
                 colors={colors}
                 onChange={patch('budget')}
               />
-              <InvestPanel invest={state.invest} monthly={model.monthlyInvest} autoMonthly={state.budget.autoSplit} onChange={patch('invest')} />
-              <SavingsPanel savings={state.savings} monthly={model.monthlySavings} autoMonthly={state.budget.autoSplit} onChange={patch('savings')} />
+              <DepositsTable
+                invest={state.invest.deposits}
+                savings={state.savings.deposits}
+                initial={{ invest: state.invest.initial, savings: state.savings.initial }}
+                onInitialChange={(i) => setState((s) => ({ ...s, invest: { ...s.invest, initial: i.invest }, savings: { ...s.savings, initial: i.savings } }))}
+                ignored={{ invest: model.invest.ignoredDeposits, savings: model.savings.ignoredDeposits }}
+                startDate={state.period.startDate}
+                colors={colors}
+                onChange={(d) => setState((s) => ({ ...s, invest: { ...s.invest, deposits: d.invest }, savings: { ...s.savings, deposits: d.savings } }))}
+              />
             </div>
-            <DepositsTable
-              invest={state.invest.deposits}
-              savings={state.savings.deposits}
-              ignored={{ invest: model.invest.ignoredDeposits, savings: model.savings.ignoredDeposits }}
-              startDate={state.period.startDate}
-              colors={colors}
-              onChange={(d) => setState((s) => ({ ...s, invest: { ...s.invest, deposits: d.invest }, savings: { ...s.savings, deposits: d.savings } }))}
-            />
+          </>
+        )}
+
+        {tab === 'rendement' && (
+          <>
+            <TabIntro title="Rendement & inflatie" text="Verwacht rendement op beleggingen, spaarrente en inflatie – generiek en desgewenst per jaar. Deze waarden gelden overal in de app." />
+            <AssumptionsPanel assumptions={state.assumptions} period={state.period} onChange={patch('assumptions')} />
           </>
         )}
 
         {tab === 'belasting' && (
           <>
             <TabIntro title="Belasting" text="Instellingen voor box 3. Het effect op je vermogen staat in het dashboard." />
-            <Box3Panel box3={state.box3} inflation={state.invest.inflation} onChange={patch('box3')} />
+            <Box3Panel box3={state.box3} inflation={state.assumptions.inflation} onChange={patch('box3')} />
           </>
         )}
 

@@ -72,9 +72,9 @@ export function ScenarioComparison({ state, colors, onScenariosChange }: Props) 
               return (
                 <tr key={r.def.id} className={r.def.id === 'realistisch' ? 'row-ref' : ''}>
                   <th scope="row">{r.def.name}</th>
-                  <td>{formatNumber(state.invest.annualReturn + r.def.returnDelta)}% <small className="muted">{signedPp(r.def.returnDelta)}</small></td>
-                  <td>{formatNumber(state.savings.annualRate + r.def.savingsDelta)}% <small className="muted">{signedPp(r.def.savingsDelta)}</small></td>
-                  <td>{formatNumber(state.invest.inflation + r.def.inflationDelta)}% <small className="muted">{signedPp(r.def.inflationDelta)}</small></td>
+                  <td>{formatNumber(state.assumptions.annualReturn + r.def.returnDelta)}% <small className="muted">{signedPp(r.def.returnDelta)}</small></td>
+                  <td>{formatNumber(state.assumptions.savingsRate + r.def.savingsDelta)}% <small className="muted">{signedPp(r.def.savingsDelta)}</small></td>
+                  <td>{formatNumber(state.assumptions.inflation + r.def.inflationDelta)}% <small className="muted">{signedPp(r.def.inflationDelta)}</small></td>
                   <td className="num"><strong>{formatEUR(r.nominal)}</strong></td>
                   <td className="num">{formatEUR(r.real)}</td>
                   <td className={`num ${diff > 0 ? 'tone-positive' : diff < 0 ? 'tone-negative' : 'muted'}`}>{r.def.id === 'realistisch' ? 'referentie' : formatPctSigned(diff)}</td>
@@ -85,9 +85,15 @@ export function ScenarioComparison({ state, colors, onScenariosChange }: Props) 
         </table>
       </div>
 
+      {state.assumptions.years.length > 0 && (
+        <p className="muted small table-note">
+          Percentages zijn de generieke waarden; jaren met een eigen waarde (tabblad Rendement &amp; inflatie) krijgen dezelfde afwijking.
+        </p>
+      )}
+
       <details className="details">
         <summary>Scenario-aannames aanpassen</summary>
-        <p className="muted small">Afwijkingen in procentpunten ten opzichte van je invoer. Inflatie wordt op beide modules toegepast.</p>
+        <p className="muted small">Afwijkingen in procentpunten ten opzichte van je invoer; ze gelden voor elk jaar, ook voor jaren met een eigen waarde.</p>
         <div className="scenario-edit">
           {state.scenarios.map((s) => (
             <fieldset key={s.id} className="scenario-box">

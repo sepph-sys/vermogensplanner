@@ -22,7 +22,7 @@
  * Jaren na de laatste periode gebruiken de parameters van die periode. Het
  * heffingsvrij vermogen en het heffingsvrij resultaat worden daarbij
  * (optioneel) jaarlijks geïndexeerd met de inflatie:
- *   bedrag_Y = bedrag_laatste · (1 + i)^(Y − jaar_laatste)
+ *   bedrag_Y = bedrag_laatste · Π_{y = laatste+1 … Y} (1 + i_y)
  *
  * Bedragen voor fiscale partners worden verdubbeld (heffingsvrij vermogen,
  * heffingsvrij resultaat, verliesdrempel). In het model zijn spaargeld en
@@ -100,16 +100,21 @@ export function periodForYear(periods: Box3Period[], year: number): Box3Period |
 export function effectivePeriod(
   cfg: Box3Config,
   year: number,
-  inflationPct: number,
+  /** Inflatie (%): vast, of per kalenderjaar. */
+  inflation: number | ((year: number) => number),
 ): { period: Box3Period; indexed: boolean } | null {
   const p = periodForYear(cfg.periods, year);
   if (!p) return null;
   const lastFrom = Math.max(...cfg.periods.map((x) => x.fromYear));
   const years = year - lastFrom;
-  if (!cfg.indexExemptions || years <= 0 || p.fromYear !== lastFrom || !inflationPct) {
+  const infl = typeof inflation === 'function' ? inflation : () => inflation;
+  if (!cfg.indexExemptions || years <= 0 || p.fromYear !== lastFrom) {
     return { period: p, indexed: false };
   }
-  const factor = Math.pow(1 + Math.max(inflationPct, -99.99) / 100, years);
+  // Π over de jaren na de laatste periode van (1 + i_jaar)
+  let factor = 1;
+  for (let y = lastFrom + 1; y <= year; y++) factor *= 1 + Math.max(infl(y) || 0, -99.99) / 100;
+  if (factor === 1) return { period: p, indexed: false };
   return {
     period: { ...p, exemptAssets: p.exemptAssets * factor, exemptReturn: p.exemptReturn * factor },
     indexed: true,
@@ -169,10 +174,10 @@ export function box3Tax(
   cfg: Box3Config,
   input: Box3YearInput,
   lossCarry: number,
-  /** Inflatie (%) voor indexatie van de heffingsvrije bedragen. */
-  inflationPct = 0,
+  /** Inflatie (%) voor indexatie van de heffingsvrije bedragen: vast of per jaar. */
+  inflation: number | ((year: number) => number) = 0,
 ): Box3YearResult | null {
-  const eff = effectivePeriod(cfg, input.year, inflationPct);
+  const eff = effectivePeriod(cfg, input.year, inflation);
   if (!eff) return null;
   const p = eff.period;
   const indexed = eff.indexed;

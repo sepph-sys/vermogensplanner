@@ -6,8 +6,13 @@ import { IconWallet } from '../ui/icons';
 
 interface Props {
   budget: BudgetState;
-  /** Inflatie-aannames van beide modules (voor 'gelijk aan inflatie'). */
-  inflation: { invest: number; savings: number };
+  /** Generieke inflatie (voor 'gelijk aan inflatie'). */
+  inflation: number;
+  /** Of er afwijkende inflatie per jaar is opgegeven. */
+  inflationPerYear: boolean;
+  /** Handmatige maandinleg per module (als niet automatisch verdeeld). */
+  manual: { invest: number; savings: number };
+  onManualChange: (m: { invest: number; savings: number }) => void;
   /** Totale maandinleg in de eerste en de laatste maand van de looptijd. */
   firstMonthly: number;
   lastMonthly: number;
@@ -16,10 +21,6 @@ interface Props {
   onChange: (b: BudgetState) => void;
 }
 
-const inflationLabel = (i: { invest: number; savings: number }) =>
-  i.invest === i.savings
-    ? `inflatie: ${formatNumber(i.invest)}`
-    : `inflatie: ${formatNumber(i.invest)} / ${formatNumber(i.savings)}`;
 
 const PRESETS = [
   { label: '100/0', share: 100 },
@@ -34,7 +35,7 @@ const PRESETS = [
  * Bij 'automatisch verdelen' worden de maandinleggen van beide modules
  * hieruit afgeleid en herberekent alles direct.
  */
-export function BudgetPanel({ budget, inflation, firstMonthly, lastMonthly, months, colors, onChange }: Props) {
+export function BudgetPanel({ budget, inflation, inflationPerYear, manual, onManualChange, firstMonthly, lastMonthly, months, colors, onChange }: Props) {
   const invest = (budget.amount * budget.investShare) / 100;
   const savings = budget.amount - invest;
   const set = (patch: Partial<BudgetState>) => onChange({ ...budget, ...patch });
@@ -84,7 +85,15 @@ export function BudgetPanel({ budget, inflation, firstMonthly, lastMonthly, mont
           <NumberField label="Percentage naar beleggen" suffix="%" value={budget.investShare} min={0} max={100} step={5} decimals={1} compact onChange={(investShare) => set({ investShare })} />
         </div>
       </fieldset>
-      {!budget.autoSplit && <p className="muted small">Handmatige modus: stel de maandinleg per module hieronder in.</p>}
+      {!budget.autoSplit && (
+        <div className="index-box manual-box">
+          <p className="muted small">Handmatige modus: vul de maandinleg per module zelf in.</p>
+          <div className="grid-2">
+            <NumberField compact label="Beleggen per maand" prefix="€" value={manual.invest} min={0} step={25} onChange={(invest) => onManualChange({ ...manual, invest })} />
+            <NumberField compact label="Sparen per maand" prefix="€" value={manual.savings} min={0} step={25} onChange={(savings) => onManualChange({ ...manual, savings })} />
+          </div>
+        </div>
+      )}
 
       {/* Jaarlijkse indexatie – geldt ook in handmatige modus voor beide modules */}
       <div className="subsection">
@@ -113,8 +122,8 @@ export function BudgetPanel({ budget, inflation, firstMonthly, lastMonthly, mont
               compact
               disabled={budget.indexFollowsInflation}
               emptyWhenDisabled
-              placeholder={inflationLabel(inflation)}
-              hint={budget.indexFollowsInflation ? 'Volgt de inflatie-aanname van elke module' : undefined}
+              placeholder={`inflatie: ${formatNumber(inflation)}`}
+              hint={budget.indexFollowsInflation ? (inflationPerYear ? 'Volgt de inflatie, inclusief afwijkingen per jaar' : 'Volgt de inflatie-aanname') : undefined}
               onChange={(indexRate) => set({ indexRate })}
             />
             {months > 12 && (

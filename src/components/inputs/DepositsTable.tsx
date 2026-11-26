@@ -4,13 +4,16 @@ import { formatEUR } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { DateField } from '../ui/DateField';
 import { NumberField } from '../ui/NumberField';
-import { IconCoins, IconPlus, IconTrash, IconWarn } from '../ui/icons';
+import { IconCoins, IconLock, IconPlus, IconTrash, IconWarn } from '../ui/icons';
 
 type Target = 'invest' | 'savings';
 
 interface Props {
   invest: Deposit[];
   savings: Deposit[];
+  /** Startinleg beleggen en startsaldo sparen (vaste regels bovenaan). */
+  initial: { invest: number; savings: number };
+  onInitialChange: (next: { invest: number; savings: number }) => void;
   /** Stortingen die buiten de looptijd vallen, per bestemming. */
   ignored: { invest: Deposit[]; savings: Deposit[] };
   startDate: string;
@@ -28,7 +31,7 @@ const newId = () => `d${Date.now().toString(36)}${(counter++).toString(36)}`;
  * 'Bestemming' bepaalt naar welke module een regel gaat; wijzigen verplaatst
  * de regel naar de andere module.
  */
-export function DepositsTable({ invest, savings, ignored, startDate, colors, onChange }: Props) {
+export function DepositsTable({ invest, savings, initial, onInitialChange, ignored, startDate, colors, onChange }: Props) {
   const lists: Record<Target, Deposit[]> = { invest, savings };
   const ignoredIds = new Set([...ignored.invest, ...ignored.savings].map((d) => d.id));
 
@@ -56,12 +59,19 @@ export function DepositsTable({ invest, savings, ignored, startDate, colors, onC
     emit({ [target]: [...lists[target], { id: newId(), date: `${year}-${startDate.slice(5)}`, amount: 1000, label: '' }] });
   };
 
-  const total = (t: Target) => lists[t].filter((d) => !ignoredIds.has(d.id)).reduce((s, d) => s + (d.amount || 0), 0);
+  /** Totaal per bestemming, inclusief startbedrag; stortingen buiten de looptijd tellen niet. */
+  const total = (t: Target) =>
+    initial[t] + lists[t].filter((d) => !ignoredIds.has(d.id)).reduce((s, d) => s + (d.amount || 0), 0);
+
+  const FIXED: { target: Target; label: string }[] = [
+    { target: 'invest', label: 'Startinleg' },
+    { target: 'savings', label: 'Startsaldo' },
+  ];
 
   return (
     <Card
-      title="Eenmalige stortingen"
-      subtitle="Extra inleg op een vaste datum, zoals bonus, vakantiegeld of erfenis"
+      title="Eenmalige inleg"
+      subtitle="Startbedragen en extra stortingen op een vaste datum, zoals bonus, vakantiegeld of erfenis"
       icon={<IconCoins />}
       actions={
         <div className="btn-row">
@@ -74,9 +84,6 @@ export function DepositsTable({ invest, savings, ignored, startDate, colors, onC
         </div>
       }
     >
-      {rows.length === 0 ? (
-        <p className="muted small">Nog geen eenmalige stortingen. Voeg een belegging of spaarstorting toe.</p>
-      ) : (
         <div className="table-wrap">
           <table className="table edit-table">
             <colgroup>
@@ -96,6 +103,35 @@ export function DepositsTable({ invest, savings, ignored, startDate, colors, onC
               </tr>
             </thead>
             <tbody>
+              {FIXED.map(({ target, label }) => (
+                <tr key={`fixed-${target}`} className="row-fixed">
+                  <td className="col-target">
+                    <span className="target-badge"><span className="swatch" style={{ background: colors[target] }} />{LABEL[target]}</span>
+                  </td>
+                  <td className="col-date">
+                    <span className="fixed-date">{formatDate(startDate)}</span>
+                  </td>
+                  <td className="col-amount">
+                    <NumberField
+                      compact
+                      hideLabel
+                      label={`${label} ${LABEL[target].toLowerCase()}`}
+                      prefix="€"
+                      value={initial[target]}
+                      min={0}
+                      step={500}
+                      onChange={(v) => onInitialChange({ ...initial, [target]: v })}
+                    />
+                  </td>
+                  <td className="col-label">
+                    <span className="fixed-label">{label} {LABEL[target].toLowerCase()}</span>
+                    <span className="muted small"> · op de startdatum</span>
+                  </td>
+                  <td className="col-action">
+                    <span className="lock" title="Vaste regel" aria-label="Vaste regel"><IconLock /></span>
+                  </td>
+                </tr>
+              ))}
               {rows.map(({ target, d }) => {
                 const out = ignoredIds.has(d.id);
                 return (
@@ -137,19 +173,20 @@ export function DepositsTable({ invest, savings, ignored, startDate, colors, onC
               })}
             </tbody>
             <tfoot>
-              {(['invest', 'savings'] as const).filter((t) => lists[t].length > 0).map((t) => (
+              {(['invest', 'savings'] as const).map((t) => (
                 <tr key={t}>
                   <th scope="row" colSpan={2}>
                     <span className="swatch" style={{ background: colors[t] }} /> Totaal {LABEL[t].toLowerCase()}
                   </th>
                   <td className="tfoot-amount"><strong>{formatEUR(total(t))}</strong></td>
-                  <td colSpan={2} className="muted small">{lists[t].length} {lists[t].length === 1 ? 'regel' : 'regels'}</td>
+                  <td colSpan={2} className="muted small">
+                    startbedrag + {lists[t].length} {lists[t].length === 1 ? 'storting' : 'stortingen'}
+                  </td>
                 </tr>
               ))}
             </tfoot>
           </table>
         </div>
-      )}
     </Card>
   );
 }
