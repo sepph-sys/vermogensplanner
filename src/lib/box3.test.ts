@@ -63,6 +63,31 @@ describe('werkelijk rendement (2028)', () => {
   });
 });
 
+describe('jaren na de laatste periode', () => {
+  it('gebruiken de laatste periode met geïndexeerd heffingsvrij resultaat', () => {
+    // 2031 = 3 jaar na 2028: vrijstelling 1.800 · 1,02^3
+    const r = box3Tax(cfg(), year(2031, 0, 0, { savings: 0, invest: 10000 }), 0, 2)!;
+    const exempt = 1800 * Math.pow(1.02, 3);
+    expect(r.system).toBe('werkelijk');
+    expect(r.indexed).toBe(true);
+    expect(r.exemption).toBeCloseTo(exempt, 9);
+    expect(r.tax).toBeCloseTo((10000 - exempt) * 0.36, 9);
+  });
+
+  it('indexeert niet in opgegeven jaren of als de optie uit staat', () => {
+    expect(box3Tax(cfg(), year(2028, 0, 0, { savings: 0, invest: 10000 }), 0, 2)!.indexed).toBe(false);
+    const off = box3Tax(cfg({ indexExemptions: false }), year(2031, 0, 0, { savings: 0, invest: 10000 }), 0, 2)!;
+    expect(off.exemption).toBe(1800);
+  });
+
+  it('indexeert het heffingsvrij vermogen als het laatste jaar forfaitair is', () => {
+    const c = cfg({ periods: createDefaultBox3().periods.slice(0, 2) }); // laatste = 2027 forfaitair
+    const r = box3Tax(c, year(2029, 100000, 0), 0, 2.5)!;
+    expect(r.system).toBe('forfaitair');
+    expect(r.exemption).toBeCloseTo(60098 * Math.pow(1.025, 2), 6);
+  });
+});
+
 describe('simulatePlan met box 3', () => {
   const savings = { kind: 'savings' as const, initial: 100000, monthly: 0, annualRate: 0, inflation: 0 };
   const none = { kind: 'invest' as const, initial: 0, monthly: 0, annualRate: 0, inflation: 0 };

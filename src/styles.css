@@ -618,6 +618,11 @@ small,
   accent-color: var(--accent-solid);
 }
 
+.checkbox-hint {
+  display: block;
+  margin: 4px 0 0 24px;
+}
+
 .index-box {
   display: flex;
   flex-direction: column;

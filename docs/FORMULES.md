@@ -156,7 +156,18 @@ Spaargeld en beleggingen zijn de enige box 3-bezittingen; er zijn geen schulden.
 
 De parameters staan in een tabel met perioden. Een periode geldt vanaf haar jaar tot de
 volgende periode; de laatste geldt voor alle latere jaren (jaren vóór de eerste periode
-gebruiken de eerste). Standaard (beoogde opbouw, stand november 2026):
+gebruiken de eerste). Zo wordt elk jaar van de forecast belast.
+
+**Indexatie na de laatste periode** (optie, standaard aan): voor jaren na het laatst
+opgegeven jaar `Y₀` worden het heffingsvrij vermogen en het heffingsvrij resultaat
+geïndexeerd met de inflatie-aanname van beleggen `i` (inclusief scenario-afwijking):
+
+```
+vrijstelling_Y = vrijstelling_Y₀ · (1 + i)^(Y − Y₀)
+```
+
+Tarief, forfaits en verliesdrempel blijven gelijk aan de laatste periode. In de tabel
+‘Berekening per jaar’ staat bij elk geïndexeerd jaar de toegepaste vrijstelling. Standaard (beoogde opbouw, stand november 2026):
 
 | Vanaf | Stelsel | Heffingsvrij | Forfait bank | Forfait overig | Tarief |
 |---|---|---|---|---|---|

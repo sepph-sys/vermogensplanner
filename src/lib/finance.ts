@@ -245,6 +245,7 @@ export function simulatePlan(
             actual: { savings: sav.yearGrowth, invest: inv.yearGrowth },
           },
           lossCarry,
+          safe(investParams.inflation), // indexatie heffingsvrije bedragen
         );
         if (res) {
           lossCarry = res.lossCarry;

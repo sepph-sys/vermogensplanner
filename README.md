@@ -92,10 +92,10 @@ De app heeft drie tabbladen (ook direct te openen via `#dashboard`, `#inleg` en
 **Belasting**
 - Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. Pas
   de grondslagwaarden per periode aan, of voeg een periode toe als de regels wijzigen.
-  Een periode geldt vanaf haar jaar tot de volgende periode.
+  Een periode geldt vanaf haar jaar tot de volgende periode; jaren daarna gebruiken de
+  laatste periode, met (optioneel) geïndexeerde heffingsvrije bedragen.
 
-Bovenaan de tabbladen Inleg en Belasting staan de kerncijfers, zodat je het effect van
-een wijziging direct ziet. Met **Voorbeelddata** (rechtsboven) zet je alles terug naar
+Met **Voorbeelddata** (rechtsboven) zet je alles terug naar
 het voorbeeld.
 
 Getallen mogen in Nederlandse (`10.000`, `7,5`) of internationale notatie (`7.5`)

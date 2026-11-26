@@ -1,4 +1,5 @@
 import { createDefaultBox3, type Box3Config, type Box3Period, type Box3System } from '../../lib/box3';
+import { formatNumber } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { NumberField } from '../ui/NumberField';
 import { Segmented } from '../ui/Segmented';
@@ -6,6 +7,8 @@ import { IconPlus, IconReset, IconScale, IconTrash, IconWarn } from '../ui/icons
 
 interface Props {
   box3: Box3Config;
+  /** Inflatie-aanname (beleggen) voor de indexatie van heffingsvrije bedragen. */
+  inflation: number;
   onChange: (b: Box3Config) => void;
 }
 
@@ -16,7 +19,7 @@ const newId = () => `p${Date.now().toString(36)}${(counter++).toString(36)}`;
  * Box 3-parameters. Elke periode geldt vanaf haar jaar tot de volgende
  * periode; de laatste periode geldt voor alle latere jaren.
  */
-export function Box3Panel({ box3, onChange }: Props) {
+export function Box3Panel({ box3, inflation, onChange }: Props) {
   const set = (patch: Partial<Box3Config>) => onChange({ ...box3, ...patch });
   const setPeriod = (id: string, patch: Partial<Box3Period>) =>
     set({ periods: box3.periods.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
@@ -55,6 +58,16 @@ export function Box3Panel({ box3, onChange }: Props) {
           <input type="checkbox" checked={box3.counterEvidence} onChange={(e) => set({ counterEvidence: e.target.checked })} />
           <span>Tegenbewijsregeling in forfaitaire jaren</span>
         </label>
+        <div>
+          <label className="checkbox">
+            <input type="checkbox" checked={box3.indexExemptions} onChange={(e) => set({ indexExemptions: e.target.checked })} />
+            <span>Heffingsvrije bedragen na {years.length ? Math.max(...years) : '–'} jaarlijks indexeren met inflatie</span>
+          </label>
+          <p className="field-hint checkbox-hint">
+            Jaren na de laatste periode gebruiken de waarden van die periode
+            {box3.indexExemptions ? `; het heffingsvrij vermogen/resultaat stijgt met de inflatie van beleggen (${formatNumber(inflation)}% per jaar).` : ', zonder indexatie.'}
+          </p>
+        </div>
 
         <div className="periods">
           {sorted.map((p, i) => {

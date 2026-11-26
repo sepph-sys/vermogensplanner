@@ -100,7 +100,6 @@ export function App() {
         {tab === 'inleg' && (
           <>
             <TabIntro title="Inleg" text="Maandbudget, verdeling tussen sparen en beleggen, indexatie en incidentele stortingen. Wijzigingen zie je direct terug in het dashboard." />
-            <KpiRow model={model} colors={colors} />
             <div className="input-grid">
               <BudgetPanel
                 budget={state.budget}
@@ -127,8 +126,7 @@ export function App() {
         {tab === 'belasting' && (
           <>
             <TabIntro title="Belasting" text="Instellingen voor box 3. Het effect op je vermogen staat in het dashboard." />
-            <KpiRow model={model} colors={colors} />
-            <Box3Panel box3={state.box3} onChange={patch('box3')} />
+            <Box3Panel box3={state.box3} inflation={state.invest.inflation} onChange={patch('box3')} />
           </>
         )}
 

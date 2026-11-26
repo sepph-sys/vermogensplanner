@@ -19,6 +19,11 @@
  *       verliesdrempel (wetsvoorstel: € 500) te boven gaat.
  *     - Belasting = belastbaar resultaat × tarief
  *
+ * Jaren na de laatste periode gebruiken de parameters van die periode. Het
+ * heffingsvrij vermogen en het heffingsvrij resultaat worden daarbij
+ * (optioneel) jaarlijks geïndexeerd met de inflatie:
+ *   bedrag_Y = bedrag_laatste · (1 + i)^(Y − jaar_laatste)
+ *
  * Bedragen voor fiscale partners worden verdubbeld (heffingsvrij vermogen,
  * heffingsvrij resultaat, verliesdrempel). In het model zijn spaargeld en
  * beleggingen de enige box 3-bezittingen; er zijn geen schulden.
@@ -53,6 +58,8 @@ export interface Box3Config {
   persons: 1 | 2;
   /** Tegenbewijsregeling toepassen in forfaitaire jaren. */
   counterEvidence: boolean;
+  /** Heffingsvrije bedragen na de laatste periode indexeren met de inflatie. */
+  indexExemptions: boolean;
   periods: Box3Period[];
 }
 
@@ -71,6 +78,7 @@ export function createDefaultBox3(): Box3Config {
     enabled: true,
     persons: 1,
     counterEvidence: true,
+    indexExemptions: true,
     periods: DEFAULT_BOX3_PERIODS.map((p) => ({ ...p })),
   };
 }
@@ -82,6 +90,30 @@ export function periodForYear(periods: Box3Period[], year: number): Box3Period |
   let found = sorted[0];
   for (const p of sorted) if (p.fromYear <= year) found = p;
   return found;
+}
+
+/**
+ * Parameters die in `year` gelden. Ligt het jaar na de laatst opgegeven
+ * periode en staat indexatie aan, dan worden de heffingsvrije bedragen
+ * geïndexeerd met `inflationPct` per jaar.
+ */
+export function effectivePeriod(
+  cfg: Box3Config,
+  year: number,
+  inflationPct: number,
+): { period: Box3Period; indexed: boolean } | null {
+  const p = periodForYear(cfg.periods, year);
+  if (!p) return null;
+  const lastFrom = Math.max(...cfg.periods.map((x) => x.fromYear));
+  const years = year - lastFrom;
+  if (!cfg.indexExemptions || years <= 0 || p.fromYear !== lastFrom || !inflationPct) {
+    return { period: p, indexed: false };
+  }
+  const factor = Math.pow(1 + Math.max(inflationPct, -99.99) / 100, years);
+  return {
+    period: { ...p, exemptAssets: p.exemptAssets * factor, exemptReturn: p.exemptReturn * factor },
+    indexed: true,
+  };
 }
 
 /** Invoer voor één belastingjaar(-deel), per pot. */
@@ -110,6 +142,10 @@ export interface Box3YearResult {
   counterEvidenceUsed: boolean;
   /** Verrekenbaar verlies na dit jaar (werkelijk stelsel). */
   lossCarry: number;
+  /** Toegepaste vrijstelling (heffingsvrij vermogen of resultaat, alle personen). */
+  exemption: number;
+  /** Of de vrijstelling met inflatie is geïndexeerd (jaar na laatste periode). */
+  indexed: boolean;
 }
 
 /** Verdeel `total` over de potten naar rato van hun positieve gewichten. */
@@ -129,9 +165,17 @@ function splitPositive(total: number, w: { savings: number; invest: number }) {
  * stelsel naar rato (maanden/12) belast; in het werkelijke stelsel wordt het
  * werkelijk behaalde resultaat in dat deel van het jaar belast.
  */
-export function box3Tax(cfg: Box3Config, input: Box3YearInput, lossCarry: number): Box3YearResult | null {
-  const p = periodForYear(cfg.periods, input.year);
-  if (!p) return null;
+export function box3Tax(
+  cfg: Box3Config,
+  input: Box3YearInput,
+  lossCarry: number,
+  /** Inflatie (%) voor indexatie van de heffingsvrije bedragen. */
+  inflationPct = 0,
+): Box3YearResult | null {
+  const eff = effectivePeriod(cfg, input.year, inflationPct);
+  if (!eff) return null;
+  const p = eff.period;
+  const indexed = eff.indexed;
   const persons = cfg.persons;
   const rate = Math.max(p.taxRate, 0) / 100;
   const fraction = input.months / 12;
@@ -167,6 +211,8 @@ export function box3Tax(cfg: Box3Config, input: Box3YearInput, lossCarry: number
       split: splitPositive(tax, weights),
       counterEvidenceUsed,
       lossCarry, // verliezen uit het werkelijke stelsel blijven staan
+      exemption: p.exemptAssets * persons,
+      indexed,
     };
   }
 
@@ -192,5 +238,7 @@ export function box3Tax(cfg: Box3Config, input: Box3YearInput, lossCarry: number
     split: splitPositive(tax, input.actual),
     counterEvidenceUsed: false,
     lossCarry: carry,
+    exemption: p.exemptReturn * persons,
+    indexed,
   };
 }

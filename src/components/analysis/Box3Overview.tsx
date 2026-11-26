@@ -129,6 +129,7 @@ export function Box3Overview({ state, model, colors }: Props) {
 function note(y: Box3YearResult): string {
   const parts: string[] = [];
   if (y.months < 12) parts.push(`deeljaar (${y.months} mnd)`);
+  if (y.indexed) parts.push(`vrijstelling geïndexeerd: ${formatEUR(y.exemption)}`);
   if (y.counterEvidenceUsed) parts.push('tegenbewijs toegepast');
   if (y.system === 'werkelijk' && y.base < 0) parts.push('negatief resultaat');
   if (y.system === 'werkelijk' && y.lossCarry > 0) parts.push(`verrekenbaar verlies ${formatEUR(y.lossCarry)}`);
