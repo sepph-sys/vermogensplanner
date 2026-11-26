@@ -5,7 +5,8 @@
  */
 
 import { addMonths, todayISO } from './dates';
-import { simulate, type Deposit, type SimulationResult } from './finance';
+import { simulatePlan, type Deposit, type SimulationResult } from './finance';
+import { createDefaultBox3, type Box3Config, type Box3YearResult } from './box3';
 
 export interface PeriodState {
   startDate: string;
@@ -57,6 +58,7 @@ export interface PlannerState {
   invest: InvestState;
   savings: SavingsState;
   scenarios: ScenarioDef[];
+  box3: Box3Config;
 }
 
 export interface ModelOverrides {
@@ -65,6 +67,8 @@ export interface ModelOverrides {
   inflationDelta?: number;
   /** Vermenigvuldigingsfactor voor beide maandinleggen (bv. 1,25 = +25%). */
   monthlyFactor?: number;
+  /** Box 3 negeren (voor de vergelijking 'zonder belasting'). */
+  noTax?: boolean;
 }
 
 export interface ModelTotals {
@@ -73,6 +77,8 @@ export interface ModelTotals {
   contributed: number;
   growth: number;
   inflationLoss: number;
+  /** Totaal betaalde box 3-belasting (nominaal). */
+  tax: number;
 }
 
 export interface ModelResult {
@@ -83,6 +89,8 @@ export interface ModelResult {
   indexSavings: number;
   invest: SimulationResult;
   savings: SimulationResult;
+  /** Box 3-afrekening per kalenderjaar. */
+  taxYears: Box3YearResult[];
   totals: ModelTotals;
 }
 
@@ -115,26 +123,28 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
   const idx = indexationRates(state, o);
   const { startDate, endDate } = state.period;
 
-  const invest = simulate({
+  const { invest, savings, taxYears } = simulatePlan(
     startDate,
     endDate,
-    initial: state.invest.initial,
-    monthly: m.invest * f,
-    annualRate: state.invest.annualReturn + (o.returnDelta ?? 0),
-    inflation: state.invest.inflation + (o.inflationDelta ?? 0),
-    indexation: idx.invest,
-    deposits: state.invest.deposits,
-  });
-
-  const savings = simulate({
-    startDate,
-    endDate,
-    initial: state.savings.initial,
-    monthly: m.savings * f,
-    annualRate: state.savings.annualRate + (o.savingsDelta ?? 0),
-    inflation: state.savings.inflation + (o.inflationDelta ?? 0),
-    indexation: idx.savings,
-  });
+    {
+      kind: 'invest',
+      initial: state.invest.initial,
+      monthly: m.invest * f,
+      annualRate: state.invest.annualReturn + (o.returnDelta ?? 0),
+      inflation: state.invest.inflation + (o.inflationDelta ?? 0),
+      indexation: idx.invest,
+      deposits: state.invest.deposits,
+    },
+    {
+      kind: 'savings',
+      initial: state.savings.initial,
+      monthly: m.savings * f,
+      annualRate: state.savings.annualRate + (o.savingsDelta ?? 0),
+      inflation: state.savings.inflation + (o.inflationDelta ?? 0),
+      indexation: idx.savings,
+    },
+    o.noTax ? undefined : state.box3,
+  );
 
   const final = invest.finalBalance + savings.finalBalance;
   const real = invest.realFinal + savings.realFinal;
@@ -147,12 +157,14 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
     indexSavings: idx.savings,
     invest,
     savings,
+    taxYears,
     totals: {
       final,
       real,
       contributed,
       growth: final - contributed,
       inflationLoss: final - real,
+      tax: invest.taxPaid + savings.taxPaid,
     },
   };
 }
@@ -190,6 +202,7 @@ export function createSampleState(): PlannerState {
     },
     savings: { initial: 15000, monthly: 300, annualRate: 2, inflation: 2.5 },
     scenarios: DEFAULT_SCENARIOS.map((s) => ({ ...s })),
+    box3: createDefaultBox3(),
   };
 }
 
@@ -212,5 +225,10 @@ export function hydrateState(raw: unknown): PlannerState {
     },
     savings: { ...base.savings, ...r.savings },
     scenarios,
+    box3: {
+      ...base.box3,
+      ...r.box3,
+      periods: Array.isArray(r.box3?.periods) ? r.box3!.periods : base.box3.periods,
+    },
   };
 }

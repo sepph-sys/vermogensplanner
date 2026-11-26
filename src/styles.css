@@ -436,6 +436,86 @@ small,
   outline-offset: 2px;
 }
 
+/* ---------- Box 3 ---------- */
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.periods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.period {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.period.is-invalid {
+  border-color: color-mix(in srgb, var(--negative) 45%, transparent);
+}
+
+.period-head {
+  padding: 0 4px;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.period-range {
+  font-variant-numeric: tabular-nums;
+}
+
+.period-top {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.period-top .segmented {
+  height: 34px;
+  align-items: stretch;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 550;
+  color: var(--text-2);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-3);
+}
+
+.stat-grid.stat-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .stat-grid.stat-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.legend.legend-spaced {
+  margin-top: 18px;
+}
+
 /* ---------- Checkbox & indexatie ---------- */
 .checkbox {
   display: inline-flex;
@@ -904,7 +984,10 @@ input[type='range']::-moz-range-thumb {
 .tooltip-title {
   font-weight: 650;
   margin-bottom: 6px;
-  text-transform: capitalize;
+}
+
+.tooltip-title::first-letter {
+  text-transform: uppercase;
 }
 
 .tooltip-row {

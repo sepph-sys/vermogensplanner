@@ -39,8 +39,8 @@ export const formatPctSigned = (fraction: number) =>
   (fraction > 0 ? '+' : '') + formatPct(fraction);
 
 /** Getal → "7,5" */
-export const formatNumber = (v: number, decimals = 2) =>
-  new Intl.NumberFormat('nl-NL', { maximumFractionDigits: decimals }).format(v);
+export const formatNumber = (v: number, decimals = 2, grouping = true) =>
+  new Intl.NumberFormat('nl-NL', { maximumFractionDigits: decimals, useGrouping: grouping }).format(v);
 
 /** Looptijd in maanden → "30 jaar" / "12 jaar en 6 maanden" */
 export function formatDuration(months: number): string {

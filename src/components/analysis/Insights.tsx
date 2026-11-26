@@ -50,7 +50,8 @@ export function Insights({ state, model, colors }: Props) {
           </div>
           <dl className="kv">
             <div><dt><span className="swatch" style={{ background: 'var(--neutral-fill)' }} />Eigen inleg</dt><dd>{formatPct(ownShare)} <small>{formatEUR(totals.contributed)}</small></dd></div>
-            <div><dt><span className="swatch" style={{ background: colors.total }} />Rendement en rente</dt><dd>{formatPct(growthShare)} <small>{formatEUR(totals.growth)}</small></dd></div>
+            <div><dt><span className="swatch" style={{ background: colors.total }} />Rendement en rente{totals.tax > 0 ? ' (netto)' : ''}</dt><dd>{formatPct(growthShare)} <small>{formatEUR(totals.growth)}</small></dd></div>
+            {totals.tax > 0 && <div><dt>Betaalde box 3-belasting</dt><dd className="tone-negative">{formatEURSigned(-totals.tax)}</dd></div>}
           </dl>
           <p className="muted small">
             {growthShare > 0.5

@@ -9,11 +9,13 @@ import { PeriodPanel } from './components/inputs/PeriodPanel';
 import { BudgetPanel } from './components/inputs/BudgetPanel';
 import { InvestPanel } from './components/inputs/InvestPanel';
 import { SavingsPanel } from './components/inputs/SavingsPanel';
+import { Box3Panel } from './components/inputs/Box3Panel';
 import { KpiRow } from './components/dashboard/KpiRow';
 import { GrowthChart } from './components/dashboard/GrowthChart';
 import { ModuleResults } from './components/dashboard/ModuleResults';
 import { ScenarioComparison } from './components/analysis/ScenarioComparison';
 import { Insights } from './components/analysis/Insights';
+import { Box3Overview } from './components/analysis/Box3Overview';
 import { Segmented } from './components/ui/Segmented';
 import { IconReset } from './components/ui/icons';
 
@@ -86,17 +88,19 @@ export function App() {
             onChange={patch('invest')}
           />
           <SavingsPanel savings={state.savings} monthly={model.monthlySavings} autoMonthly={state.budget.autoSplit} onChange={patch('savings')} />
+          <Box3Panel box3={state.box3} onChange={patch('box3')} />
         </aside>
 
         <main className="main">
           <KpiRow model={model} colors={colors} />
           <GrowthChart model={model} startDate={state.period.startDate} colors={colors} />
           <ModuleResults model={model} colors={colors} />
+          <Box3Overview state={state} model={model} colors={colors} />
           <ScenarioComparison state={state} colors={colors} onScenariosChange={patch('scenarios')} />
           <Insights state={state} model={model} colors={colors} />
           <footer className="footer">
             Alle berekeningen vinden plaats in je browser; er worden geen gegevens verstuurd. Invoer wordt lokaal bewaard.
-            Dit is een rekenmodel met constante gemiddelde rendementen – werkelijke rendementen schommelen en resultaten uit het verleden bieden geen garantie voor de toekomst. Belastingen (box 3) en kosten zijn niet apart gemodelleerd.
+            Dit is een rekenmodel met constante gemiddelde rendementen – werkelijke rendementen schommelen en resultaten uit het verleden bieden geen garantie voor de toekomst. Box 3 wordt vereenvoudigd berekend met spaargeld en beleggingen als enige bezittingen; fondskosten zijn niet apart gemodelleerd. Geen fiscaal advies.
           </footer>
         </main>
       </div>

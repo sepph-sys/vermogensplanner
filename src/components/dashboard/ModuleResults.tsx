@@ -23,7 +23,12 @@ export function ModuleResults({ model, colors }: Props) {
       <Card title="Resultaat beleggen" subtitle={monthlyLabel(model.monthlyInvest, model.indexInvest, invest.finalMonthly)} icon={<IconTrend />} className="accent-invest" >
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(invest.totalContributed)} />
-          <Stat label="Behaald rendement" value={formatEURSigned(invest.totalGrowth)} tone={invest.totalGrowth >= 0 ? 'positive' : 'negative'} sub={`${formatPctSigned(invest.growthPct)} op inleg`} />
+          <Stat
+            label={invest.taxPaid > 0 ? 'Rendement na box 3' : 'Behaald rendement'}
+            value={formatEURSigned(invest.totalGrowth)}
+            tone={invest.totalGrowth >= 0 ? 'positive' : 'negative'}
+            sub={`${formatPctSigned(invest.growthPct)} op inleg${invest.taxPaid > 0 ? ` · ${formatEUR(invest.taxPaid)} box 3` : ''}`}
+          />
           <Stat label="Eindvermogen" value={formatEUR(invest.finalBalance)} swatch={colors.invest} emphasis />
           <Stat label="Reële eindwaarde" value={formatEUR(invest.realFinal)} sub={`${formatEURSigned(investRealGain)} reëel t.o.v. inleg`} />
         </div>
@@ -33,7 +38,12 @@ export function ModuleResults({ model, colors }: Props) {
       <Card title="Resultaat sparen" subtitle={monthlyLabel(model.monthlySavings, model.indexSavings, savings.finalMonthly)} icon={<IconPiggy />} className="accent-savings">
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(savings.totalContributed)} />
-          <Stat label="Ontvangen rente" value={formatEURSigned(savings.totalGrowth)} tone={savings.totalGrowth >= 0 ? 'positive' : 'negative'} sub={`${formatPctSigned(savings.growthPct)} op inleg`} />
+          <Stat
+            label={savings.taxPaid > 0 ? 'Rente na box 3' : 'Ontvangen rente'}
+            value={formatEURSigned(savings.totalGrowth)}
+            tone={savings.totalGrowth >= 0 ? 'positive' : 'negative'}
+            sub={`${formatPctSigned(savings.growthPct)} op inleg${savings.taxPaid > 0 ? ` · ${formatEUR(savings.taxPaid)} box 3` : ''}`}
+          />
           <Stat label="Eindsaldo" value={formatEUR(savings.finalBalance)} swatch={colors.savings} emphasis />
           <Stat
             label="Reële eindwaarde"

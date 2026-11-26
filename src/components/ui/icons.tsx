@@ -49,3 +49,6 @@ export const IconBulb = () => (
 export const IconWarn = () => (
   <svg {...base} width={14} height={14}><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
 );
+export const IconScale = () => (
+  <svg {...base}><path d="M12 3v18M7 21h10M5 7h14" /><path d="M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z" /></svg>
+);

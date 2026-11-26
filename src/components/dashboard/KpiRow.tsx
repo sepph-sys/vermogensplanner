@@ -21,7 +21,7 @@ export function KpiRow({ model, colors }: Props) {
         <Stat label="Spaarsaldo" swatch={colors.savings} value={formatEUR(savings.finalBalance)} sub={<><span className="tone-positive">{formatEURSigned(savings.totalGrowth)}</span> rente</>} />
       </div>
       <div className="card kpi kpi-highlight">
-        <Stat label="Totaal vermogen" swatch={colors.total} value={formatEUR(totals.final)} emphasis sub={`${formatPct(share)} belegd · ${formatPct(1 - share)} gespaard`} />
+        <Stat label="Totaal vermogen" swatch={colors.total} value={formatEUR(totals.final)} emphasis sub={totals.tax > 0 ? `na ${formatEUR(totals.tax)} box 3 · ${formatPct(share)} belegd` : `${formatPct(share)} belegd · ${formatPct(1 - share)} gespaard`} />
       </div>
       <div className="card kpi">
         <Stat label="Koopkrachtgecorrigeerd" value={formatEUR(totals.real)} sub={<>in euro’s van vandaag · <span className="tone-negative">{formatEURSigned(-totals.inflationLoss)}</span> inflatie</>} />

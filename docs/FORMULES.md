@@ -147,11 +147,82 @@ De afwijkingen zijn in de app aan te passen (“Scenario-aannames aanpassen”).
 * **Kantelpunt**: de eerste maand waarin de maandelijkse groei van de beleggingen
   (`B · r`) groter is dan de maandelijkse inleg.
 
-## 9. Bewuste vereenvoudigingen
+## 9. Box 3-belasting
+
+Code: [`src/lib/box3.ts`](../src/lib/box3.ts), tests: [`src/lib/box3.test.ts`](../src/lib/box3.test.ts).
+Spaargeld en beleggingen zijn de enige box 3-bezittingen; er zijn geen schulden.
+
+### Perioden
+
+De parameters staan in een tabel met perioden. Een periode geldt vanaf haar jaar tot de
+volgende periode; de laatste geldt voor alle latere jaren (jaren vóór de eerste periode
+gebruiken de eerste). Standaard (beoogde opbouw, stand november 2026):
+
+| Vanaf | Stelsel | Heffingsvrij | Forfait bank | Forfait overig | Tarief |
+|---|---|---|---|---|---|
+| 2026 | Forfaitair | € 59.357 vermogen p.p. | 1,28% (voorlopig) | 6,00% | 36% |
+| 2027 | Forfaitair | € 60.098 vermogen p.p. (voorlopig) | 1,28% (aanname) | 6,37% (voorlopig) | 36% |
+| 2028 | Werkelijk rendement | € 1.800 resultaat p.p.; verliesdrempel € 500 p.p. | – | – | 36% |
+
+Alle waarden zijn in de app aan te passen. Het kabinet heeft op 3 november 2026
+voorgesteld het werkelijk-rendementstelsel pas per 2029 in te voeren; simuleer dat door
+‘Vanaf jaar’ van de laatste periode op 2029 te zetten. Bij fiscale partners worden het
+heffingsvrij vermogen, het heffingsvrij resultaat en de verliesdrempel verdubbeld.
+
+### Belastingjaren en betaling
+
+* Belasting wordt per kalenderjaar berekend. Het kalenderjaar van een maand is het jaar
+  van de begindatum van die maand.
+* De aanslag wordt aan het einde van elk kalenderjaar (en aan het einde van de looptijd)
+  uit het vermogen betaald, verdeeld over beleggen en sparen naar rato van hun bijdrage
+  aan het belaste (fictieve of werkelijke) rendement.
+* Peildatum is 1 januari; in het eerste jaar is dat het saldo op de startdatum.
+
+### Forfaitair stelsel
+
+```
+vermogen      = S + B                         (saldi op de peildatum)
+fictief       = (S · f_bank + B · f_overig) · k/12
+grondslag     = max(0, vermogen − heffingsvrij vermogen)
+voordeel      = fictief · grondslag / vermogen
+belasting     = voordeel · tarief
+```
+
+`k` = aantal maanden van het kalenderjaar binnen de looptijd (deeljaren naar rato).
+
+**Tegenbewijsregeling** (optioneel): is het werkelijke rendement over het jaar (rente +
+waardeverandering) lager dan het fictieve rendement, dan wordt `fictief` vervangen door
+`max(0, werkelijk rendement)`.
+
+### Werkelijk rendement
+
+```
+resultaat  = rente + waardeverandering in het jaar
+als resultaat ≥ 0:
+  na_vrijstelling = max(0, resultaat − heffingsvrij resultaat)
+  belastbaar      = na_vrijstelling − verrekend verlies uit eerdere jaren
+als resultaat < 0:
+  verrekenbaar verlies += max(0, −resultaat − verliesdrempel)
+belasting  = belastbaar · tarief
+```
+
+Ongerealiseerde koerswinst wordt jaarlijks belast (vermogensaanwas), zoals in het
+wetsvoorstel voor beleggingen.
+
+### Effect in het dashboard
+
+* Eindvermogen, rendement en reële waarde zijn **na** box 3.
+* ‘Effect op eindvermogen’ = eindvermogen met box 3 − eindvermogen zonder box 3. Dit is
+  meer dan de betaalde belasting, omdat betaalde belasting ook niet meer meegroeit.
+* ‘Belastingdruk op groei’ = dat effect gedeeld door het bruto rendement zonder box 3.
+
+## 10. Bewuste vereenvoudigingen
 
 * Constante gemiddelde rendementen; geen volatiliteit of volgorde-risico (*sequence of
   returns*). Werkelijke rendementen schommelen.
-* Geen belasting (box 3), transactiekosten of fondskosten apart gemodelleerd – verwerk
-  kosten door een netto rendement in te voeren.
+* Box 3 is vereenvoudigd: geen schulden, groene beleggingen, andere bezittingen of
+  voorlopige aanslagen gedurende het jaar; de belasting wordt per jaareinde betaald.
+  Transactie- en fondskosten zijn niet apart gemodelleerd – verwerk kosten door een netto
+  rendement in te voeren.
 * Indexatie gebeurt in jaarlijkse stappen, niet maandelijks; extra eenmalige stortingen
   worden niet geïndexeerd.

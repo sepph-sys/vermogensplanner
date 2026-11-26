@@ -17,6 +17,8 @@ interface NumberFieldProps {
   /** Toon een leeg veld (met placeholder) zolang het veld uitgeschakeld is. */
   emptyWhenDisabled?: boolean;
   placeholder?: string;
+  /** Geen duizendtalscheiding tonen (bv. voor jaartallen). */
+  noGrouping?: boolean;
 }
 
 /**
@@ -39,15 +41,16 @@ export function NumberField({
   compact,
   emptyWhenDisabled,
   placeholder,
+  noGrouping,
 }: NumberFieldProps) {
   const id = useId();
   const [focused, setFocused] = useState(false);
-  const [text, setText] = useState(() => formatNumber(value, decimals));
+  const [text, setText] = useState(() => formatNumber(value, decimals, !noGrouping));
 
   // Externe wijzigingen (bv. door de budgetslider) doorvoeren als het veld niet actief is.
   useEffect(() => {
-    if (!focused) setText(formatNumber(value, decimals));
-  }, [value, decimals, focused]);
+    if (!focused) setText(formatNumber(value, decimals, !noGrouping));
+  }, [value, decimals, focused, noGrouping]);
 
   const clamp = (n: number) => Math.min(Math.max(n, min), max);
 
@@ -63,7 +66,7 @@ export function NumberField({
     const delta = (e.key === 'ArrowUp' ? 1 : -1) * step * (e.shiftKey ? 10 : 1);
     const next = clamp(Math.round((value + delta) * 1e6) / 1e6);
     onChange(next);
-    setText(formatNumber(next, decimals));
+    setText(formatNumber(next, decimals, !noGrouping));
   };
 
   return (
@@ -82,7 +85,7 @@ export function NumberField({
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
-            setText(formatNumber(value, decimals));
+            setText(formatNumber(value, decimals, !noGrouping));
           }}
           onChange={(e) => commit(e.target.value)}
           onKeyDown={onKeyDown}

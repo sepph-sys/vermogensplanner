@@ -17,6 +17,11 @@ Alle berekeningen gebeuren in de browser; er is geen backend en er wordt niets v
   direct. Uit te zetten voor handmatige invoer per module.
 - **Indexatie** – laat de maandinleg jaarlijks meegroeien, gelijk aan de inflatie of met
   een eigen percentage.
+- **Box 3-belasting** – forfaitair stelsel (2026, 2027) en werkelijk-rendementstelsel
+  (beoogd vanaf 2028), met per periode aanpasbare grondslagwaarden: heffingsvrij
+  vermogen/resultaat, forfaits, tarief en verliesdrempel. Optie voor fiscale partners en
+  de tegenbewijsregeling. Overzicht van de belasting per jaar en het effect op het
+  eindvermogen.
 - **Dashboard** – belegd vermogen, spaarsaldo, totaal vermogen en koopkrachtgecorrigeerd
   vermogen, plus een interactieve grafiek (nominaal/reëel) van beleggingen, sparen,
   totaal vermogen en eigen inleg.
@@ -73,8 +78,11 @@ Source: GitHub Actions**. De app staat daarna op
    looptijd worden rood gemarkeerd en niet meegeteld.
 4. Bekijk het **dashboard**, schakel de grafiek tussen *Nominaal* en *Reëel* en hover
    voor details per maand.
-5. Vergelijk **scenario’s** en pas onder “Scenario-aannames aanpassen” de afwijkingen aan.
-6. Met **Voorbeelddata** (rechtsboven) zet je alles terug naar het voorbeeld.
+5. Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. Pas
+   de grondslagwaarden per periode aan, of voeg een periode toe als de regels wijzigen.
+   Een periode geldt vanaf haar jaar tot de volgende periode.
+6. Vergelijk **scenario’s** en pas onder “Scenario-aannames aanpassen” de afwijkingen aan.
+7. Met **Voorbeelddata** (rechtsboven) zet je alles terug naar het voorbeeld.
 
 Getallen mogen in Nederlandse (`10.000`, `7,5`) of internationale notatie (`7.5`)
 worden ingevoerd. Pijltje omhoog/omlaag verhoogt/verlaagt, met Shift in stappen van 10.
@@ -93,6 +101,8 @@ vermogensplanner/
     ├── lib/
     │   ├── finance.ts         # Rekenkern: maandsimulatie, rente, inflatie
     │   ├── finance.test.ts    # Tests (o.a. tegen gesloten annuïteitenformule)
+    │   ├── box3.ts            # Box 3: perioden, forfaitair en werkelijk rendement
+    │   ├── box3.test.ts       # Tests van de box 3-berekening
     │   ├── model.ts           # State-types, voorbeelddata, beleggen+sparen-model
     │   ├── dates.ts           # Tijdzone-veilige datumhulpjes
     │   ├── format.ts          # nl-NL valuta/percentage-notatie en invoerparser
@@ -102,9 +112,9 @@ vermogensplanner/
     │   └── useTheme.ts
     └── components/
         ├── ui/                # Card, Stat, NumberField, DateField, Segmented, iconen
-        ├── inputs/            # Looptijd, Maandbudget, Beleggen, Sparen
+        ├── inputs/            # Looptijd, Maandbudget, Beleggen, Sparen, Box 3
         ├── dashboard/         # KPI-rij, groeigrafiek, resultaten per module
-        └── analysis/          # Scenariovergelijking, financiële inzichten
+        └── analysis/          # Scenario's, inzichten, box 3-overzicht
 ```
 
 ## Rekenmodel in het kort
@@ -117,6 +127,7 @@ vereenvoudigingen.
 
 ## Disclaimer
 
-Dit is een rekenmodel met constante gemiddelde rendementen, geen financieel advies.
-Werkelijke rendementen schommelen; belasting (box 3) en kosten zijn niet apart
+Dit is een rekenmodel met constante gemiddelde rendementen, geen financieel of fiscaal
+advies. Werkelijke rendementen schommelen. Box 3 wordt vereenvoudigd berekend en de
+cijfers voor 2027 en later zijn nog niet definitief; fondskosten zijn niet apart
 gemodelleerd.
