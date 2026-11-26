@@ -72,6 +72,9 @@ verifieert dit tot op 6 decimalen.
 | Grootheid | Formule |
 |---|---|
 | Totale inleg | `P + Σ PMT_m + Σ E_m` (zonder indexatie: `P + n·PMT + Σ E_m`) |
+
+Extra eenmalige stortingen `E_m` bestaan voor beleggen én sparen; elke storting telt
+alleen mee in de module die als bestemming is gekozen.
 | Eindvermogen / eindsaldo | `B_n` |
 | Behaald rendement / ontvangen rente (€) | `B_n − totale inleg` |
 | Rendement (%) | `(B_n − totale inleg) / totale inleg` |

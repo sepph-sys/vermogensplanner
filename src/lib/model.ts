@@ -41,6 +41,8 @@ export interface SavingsState {
   monthly: number;
   annualRate: number;
   inflation: number;
+  /** Extra eenmalige stortingen op de spaarrekening. */
+  deposits: Deposit[];
 }
 
 export interface ScenarioDef {
@@ -142,6 +144,7 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
       annualRate: state.savings.annualRate + (o.savingsDelta ?? 0),
       inflation: state.savings.inflation + (o.inflationDelta ?? 0),
       indexation: idx.savings,
+      deposits: state.savings.deposits,
     },
     o.noTax ? undefined : state.box3,
   );
@@ -200,7 +203,7 @@ export function createSampleState(): PlannerState {
         { id: 'd2', date: `${y + 10}-01-01`, amount: 20000, label: 'Erfenis' },
       ],
     },
-    savings: { initial: 15000, monthly: 300, annualRate: 2, inflation: 2.5 },
+    savings: { initial: 15000, monthly: 300, annualRate: 2, inflation: 2.5, deposits: [] },
     scenarios: DEFAULT_SCENARIOS.map((s) => ({ ...s })),
     box3: createDefaultBox3(),
   };
@@ -223,7 +226,11 @@ export function hydrateState(raw: unknown): PlannerState {
       ...r.invest,
       deposits: Array.isArray(r.invest?.deposits) ? r.invest!.deposits : base.invest.deposits,
     },
-    savings: { ...base.savings, ...r.savings },
+    savings: {
+      ...base.savings,
+      ...r.savings,
+      deposits: Array.isArray(r.savings?.deposits) ? r.savings!.deposits : r.savings ? [] : base.savings.deposits,
+    },
     scenarios,
     box3: {
       ...base.box3,

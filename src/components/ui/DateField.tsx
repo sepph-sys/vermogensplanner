@@ -7,13 +7,14 @@ interface DateFieldProps {
   min?: string;
   max?: string;
   compact?: boolean;
+  hideLabel?: boolean;
 }
 
-export function DateField({ label, value, onChange, min, max, compact }: DateFieldProps) {
+export function DateField({ label, value, onChange, min, max, compact, hideLabel }: DateFieldProps) {
   const id = useId();
   return (
     <div className={`field${compact ? ' field-compact' : ''}`}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : undefined}>{label}</label>
       <div className="input-wrap">
         <input
           id={id}

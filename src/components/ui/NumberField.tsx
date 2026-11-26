@@ -19,6 +19,8 @@ interface NumberFieldProps {
   placeholder?: string;
   /** Geen duizendtalscheiding tonen (bv. voor jaartallen). */
   noGrouping?: boolean;
+  /** Label alleen voor schermlezers (bv. in een tabelcel). */
+  hideLabel?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export function NumberField({
   emptyWhenDisabled,
   placeholder,
   noGrouping,
+  hideLabel,
 }: NumberFieldProps) {
   const id = useId();
   const [focused, setFocused] = useState(false);
@@ -71,7 +74,7 @@ export function NumberField({
 
   return (
     <div className={`field${compact ? ' field-compact' : ''}`}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : undefined}>{label}</label>
       <div className={`input-wrap${disabled ? ' disabled' : ''}`}>
         {prefix && <span className="affix">{prefix}</span>}
         <input

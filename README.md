@@ -9,6 +9,7 @@ Alle berekeningen gebeuren in de browser; er is geen backend en er wordt niets v
 
 - **Beleggen** – start- en einddatum, startinleg, maandelijkse inleg, onbeperkt aantal
   extra eenmalige stortingen (datum + bedrag + omschrijving), jaarrendement en inflatie.
+  Eenmalige stortingen kunnen ook naar de spaarrekening.
   Toont totale inleg, behaald rendement (€ en %), eindvermogen en reële eindwaarde.
 - **Sparen** – startsaldo, maandelijkse inleg, spaarrente en inflatie. Toont totale
   inleg, ontvangen rente, eindsaldo en reële eindwaarde.
@@ -85,13 +86,16 @@ De app heeft drie tabbladen (ook direct te openen via `#dashboard`, `#inleg` en
    schakelaar uit om de maandinleg per module zelf in te vullen. Zet *Maandinleg jaarlijks
    indexeren* aan om de inleg elk jaar te verhogen: laat *Gelijk aan inflatie*
    aangevinkt, of vink het uit en vul een eigen percentage in.
-2. **Beleggen / Sparen**: vul startbedragen, rendement/rente en inflatie in en voeg
-   eventuele extra stortingen toe (bonus, erfenis, vakantiegeld). Stortingen buiten de
-   looptijd worden rood gemarkeerd en niet meegeteld.
+2. **Beleggen / Sparen**: vul startbedragen, rendement/rente en inflatie in.
+3. **Eenmalige stortingen**: één tabel voor beleggen én sparen (bonus, erfenis,
+   vakantiegeld). Per regel kies je de bestemming, datum, bedrag en omschrijving; onderaan
+   staat het totaal per bestemming. Stortingen buiten de looptijd worden rood gemarkeerd en
+   niet meegeteld.
 
 **Belasting**
-- Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. Pas
-  de grondslagwaarden per periode aan, of voeg een periode toe als de regels wijzigen.
+- Stel bij **Box 3-belasting** in of je alleenstaand bent of fiscale partners hebt. De
+  grondslagwaarden staan in een tabel met één regel per periode (kolommen die niet bij het
+  gekozen stelsel horen tonen ‘–’). Voeg een regel toe als de regels wijzigen.
   Een periode geldt vanaf haar jaar tot de volgende periode; jaren daarna gebruiken de
   laatste periode, met (optioneel) geïndexeerde heffingsvrije bedragen.
 
@@ -127,7 +131,7 @@ vermogensplanner/
     │   └── useTheme.ts
     └── components/
         ├── ui/                # Card, Stat, Tabs, NumberField, DateField, Segmented, iconen
-        ├── inputs/            # Analyseperiode, Maandbudget, Beleggen, Sparen, Box 3
+        ├── inputs/            # Analyseperiode, Maandbudget, Beleggen, Sparen, stortingen, Box 3
         ├── dashboard/         # KPI-rij, groeigrafiek, resultaten per module
         └── analysis/          # Scenario's, inzichten, box 3-overzicht
 ```

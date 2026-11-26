@@ -8,6 +8,7 @@ import { formatDuration } from './lib/format';
 import { PeriodPanel } from './components/inputs/PeriodPanel';
 import { BudgetPanel } from './components/inputs/BudgetPanel';
 import { InvestPanel } from './components/inputs/InvestPanel';
+import { DepositsTable } from './components/inputs/DepositsTable';
 import { SavingsPanel } from './components/inputs/SavingsPanel';
 import { Box3Panel } from './components/inputs/Box3Panel';
 import { KpiRow } from './components/dashboard/KpiRow';
@@ -110,16 +111,17 @@ export function App() {
                 colors={colors}
                 onChange={patch('budget')}
               />
-              <InvestPanel
-                invest={state.invest}
-                monthly={model.monthlyInvest}
-                autoMonthly={state.budget.autoSplit}
-                startDate={state.period.startDate}
-                ignored={model.invest.ignoredDeposits}
-                onChange={patch('invest')}
-              />
+              <InvestPanel invest={state.invest} monthly={model.monthlyInvest} autoMonthly={state.budget.autoSplit} onChange={patch('invest')} />
               <SavingsPanel savings={state.savings} monthly={model.monthlySavings} autoMonthly={state.budget.autoSplit} onChange={patch('savings')} />
             </div>
+            <DepositsTable
+              invest={state.invest.deposits}
+              savings={state.savings.deposits}
+              ignored={{ invest: model.invest.ignoredDeposits, savings: model.savings.ignoredDeposits }}
+              startDate={state.period.startDate}
+              colors={colors}
+              onChange={(d) => setState((s) => ({ ...s, invest: { ...s.invest, deposits: d.invest }, savings: { ...s.savings, deposits: d.savings } }))}
+            />
           </>
         )}
 
