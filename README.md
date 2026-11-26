@@ -72,7 +72,7 @@ De app heeft vier tabbladen (ook direct te openen via `#dashboard`, `#inleg`,
 `#rendement` en `#belasting` achter de URL):
 
 **Dashboard**
-1. Kies bovenaan de **analyseperiode** (start- en einddatum, of 10–40 jaar). Die geldt
+1. Kies bovenaan de **analyseperiode** (start- en einddatum, of 5–40 jaar). Die geldt
    voor alle berekeningen.
 2. Bekijk de kerncijfers, de grafiek (schakel tussen *Nominaal* en *Reëel*, hover voor
    details per maand), de resultaten per module en het box 3-overzicht.
@@ -107,6 +107,13 @@ De app heeft vier tabbladen (ook direct te openen via `#dashboard`, `#inleg`,
 
 Met **Voorbeelddata** (rechtsboven) zet je alles terug naar
 het voorbeeld.
+
+**Datums** typ je in of kies je met de kalenderknop; ze worden altijd getoond als
+dd/mm/jjjj. Herkend worden dd/mm/jjjj, mm/dd/jjjj (als dd/mm niet kan, bv. 12/31/2030),
+jjjj/mm/dd en – zonder scheidingstekens – ddmmjjjj. Ook `-`, `.` of een spatie mogen als
+scheidingsteken. Een ongeldige datum wordt rood gemarkeerd met een melding; de vorige
+waarde blijft dan in de berekening staan. Bevestig met Enter of door het veld te
+verlaten; Esc herstelt de vorige waarde.
 
 Getallen mogen in Nederlandse (`10.000`, `7,5`) of internationale notatie (`7.5`)
 worden ingevoerd. Pijltje omhoog/omlaag verhoogt/verlaagt, met Shift in stappen van 10.

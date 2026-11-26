@@ -1,5 +1,5 @@
 import type { Deposit } from '../../lib/finance';
-import { formatDate } from '../../lib/dates';
+import { formatDate, formatDMY } from '../../lib/dates';
 import { formatEUR } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { DateField } from '../ui/DateField';
@@ -109,7 +109,7 @@ export function DepositsTable({ invest, savings, initial, onInitialChange, ignor
                     <span className="target-badge"><span className="swatch" style={{ background: colors[target] }} />{LABEL[target]}</span>
                   </td>
                   <td className="col-date">
-                    <span className="fixed-date">{formatDate(startDate)}</span>
+                    <span className="fixed-date">{formatDMY(startDate)}</span>
                   </td>
                   <td className="col-amount">
                     <NumberField

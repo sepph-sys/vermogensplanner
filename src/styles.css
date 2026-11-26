@@ -454,8 +454,52 @@ small,
   outline: none;
 }
 
-.input-wrap input[type='date'] {
-  padding: 0 6px 0 8px;
+/* Datumveld: tekstinvoer + kalenderknop + verborgen native kiezer */
+.date-wrap {
+  position: relative;
+}
+
+.date-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.date-btn:hover {
+  color: var(--accent);
+}
+
+.date-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.date-picker-native {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+
+.input-wrap.invalid {
+  border-color: var(--negative);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--negative) 15%, transparent);
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: var(--negative);
 }
 
 .input-wrap input::placeholder {

@@ -96,3 +96,30 @@ describe('parseUserNumber', () => {
     expect(parseUserNumber('abc')).toBeNull();
   });
 });
+
+import { formatDMY, parseUserDate } from './dates';
+
+describe('parseUserDate', () => {
+  it('herkent dd/mm/jjjj, mm/dd/jjjj en jjjj/mm/dd', () => {
+    expect(parseUserDate('25/11/2026')).toBe('2026-11-25');
+    expect(parseUserDate('12/31/2030')).toBe('2030-12-31'); // alleen mm/dd mogelijk
+    expect(parseUserDate('2030/12/31')).toBe('2030-12-31');
+    expect(parseUserDate('5-3-2031')).toBe('2031-03-05'); // ambigu → dd/mm
+    expect(parseUserDate('1.12.2026')).toBe('2026-12-01');
+  });
+  it('probeert zonder scheidingstekens dd/mm/jjjj', () => {
+    expect(parseUserDate('25112026')).toBe('2026-11-25');
+    expect(parseUserDate('011227')).toBe('2027-12-01');
+    expect(parseUserDate('20301231')).toBe('2030-12-31'); // laatste poging jjjjmmdd
+  });
+  it('weigert ongeldige datums', () => {
+    expect(parseUserDate('31/02/2027')).toBeNull();
+    expect(parseUserDate('13/13/2027')).toBeNull();
+    expect(parseUserDate('abc')).toBeNull();
+    expect(parseUserDate('2027')).toBeNull();
+    expect(parseUserDate('')).toBeNull();
+  });
+  it('toont altijd dd/mm/jjjj', () => {
+    expect(formatDMY('2026-12-01')).toBe('01/12/2026');
+  });
+});

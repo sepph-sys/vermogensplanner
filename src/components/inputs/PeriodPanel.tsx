@@ -10,7 +10,7 @@ interface Props {
   onChange: (p: PeriodState) => void;
 }
 
-const PRESETS = [10, 20, 30, 40];
+const PRESETS = [5, 10, 20, 30, 40];
 
 /** Looptijd als filterbalk bovenaan het dashboard – geldt voor alle berekeningen. */
 export function PeriodPanel({ period, onChange }: Props) {
