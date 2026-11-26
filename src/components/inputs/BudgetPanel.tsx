@@ -1,14 +1,25 @@
 import type { BudgetState } from '../../lib/model';
-import { formatEUR } from '../../lib/format';
+import { formatDuration, formatEUR, formatNumber } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { NumberField } from '../ui/NumberField';
 import { IconWallet } from '../ui/icons';
 
 interface Props {
   budget: BudgetState;
+  /** Inflatie-aannames van beide modules (voor 'gelijk aan inflatie'). */
+  inflation: { invest: number; savings: number };
+  /** Totale maandinleg in de eerste en de laatste maand van de looptijd. */
+  firstMonthly: number;
+  lastMonthly: number;
+  months: number;
   colors: { invest: string; savings: string };
   onChange: (b: BudgetState) => void;
 }
+
+const inflationLabel = (i: { invest: number; savings: number }) =>
+  i.invest === i.savings
+    ? `inflatie: ${formatNumber(i.invest)}`
+    : `inflatie: ${formatNumber(i.invest)} / ${formatNumber(i.savings)}`;
 
 const PRESETS = [
   { label: '100/0', share: 100 },
@@ -23,7 +34,7 @@ const PRESETS = [
  * Bij 'automatisch verdelen' worden de maandinleggen van beide modules
  * hieruit afgeleid en herberekent alles direct.
  */
-export function BudgetPanel({ budget, colors, onChange }: Props) {
+export function BudgetPanel({ budget, inflation, firstMonthly, lastMonthly, months, colors, onChange }: Props) {
   const invest = (budget.amount * budget.investShare) / 100;
   const savings = budget.amount - invest;
   const set = (patch: Partial<BudgetState>) => onChange({ ...budget, ...patch });
@@ -74,6 +85,47 @@ export function BudgetPanel({ budget, colors, onChange }: Props) {
         </div>
       </fieldset>
       {!budget.autoSplit && <p className="muted small">Handmatige modus: stel de maandinleg per module hieronder in.</p>}
+
+      {/* Jaarlijkse indexatie – geldt ook in handmatige modus voor beide modules */}
+      <div className="subsection">
+        <label className="switch">
+          <input type="checkbox" checked={budget.indexEnabled} onChange={(e) => set({ indexEnabled: e.target.checked })} />
+          <span className="switch-track" aria-hidden="true" />
+          <span>Maandinleg jaarlijks indexeren</span>
+        </label>
+        {budget.indexEnabled && (
+          <div className="index-box">
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={budget.indexFollowsInflation}
+                onChange={(e) => set({ indexFollowsInflation: e.target.checked })}
+              />
+              <span>Gelijk aan inflatie</span>
+            </label>
+            <NumberField
+              label="Indexatie per jaar"
+              suffix="%"
+              value={budget.indexRate}
+              min={-10}
+              max={30}
+              step={0.25}
+              compact
+              disabled={budget.indexFollowsInflation}
+              emptyWhenDisabled
+              placeholder={inflationLabel(inflation)}
+              hint={budget.indexFollowsInflation ? 'Volgt de inflatie-aanname van elke module' : undefined}
+              onChange={(indexRate) => set({ indexRate })}
+            />
+            {months > 12 && (
+              <p className="muted small index-result">
+                Inleg groeit van <strong>{formatEUR(firstMonthly)}</strong> naar <strong>{formatEUR(lastMonthly)}</strong> per maand
+                in het laatste jaar ({formatDuration(months)}).
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

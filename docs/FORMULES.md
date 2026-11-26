@@ -13,6 +13,7 @@ de formules worden gecontroleerd door de tests in [`src/lib/finance.test.ts`](..
 | `R`   | Effectief jaarrendement / jaarrente (als fractie, 7% → 0,07) |
 | `r`   | Equivalent maandpercentage |
 | `i`   | Gemiddelde jaarlijkse inflatie (fractie) |
+| `g`   | Jaarlijkse indexatie van de maandinleg (fractie; 0 = vast bedrag) |
 | `n`   | Looptijd in hele maanden |
 | `B_m` | Saldo aan het eind van maand `m` |
 
@@ -38,14 +39,17 @@ De looptijd `n` is het aantal volle maanden tussen start- en einddatum (max. 100
 Per maand `m = 0 … n−1`:
 
 ```
-B ← B + PMT + E_m        (stortingen aan het begin van de maand)
+B ← B + PMT_m + E_m      (stortingen aan het begin van de maand)
 B ← B · (1 + r)          (groei over de maand)
 ```
 
-met beginwaarde `B = P` en `E_m` de som van alle extra eenmalige stortingen in maand `m`.
+met `PMT_m = PMT · (1 + g)^⌊m/12⌋`, beginwaarde `B = P` en `E_m` de som van alle extra eenmalige stortingen in maand `m`.
 
 * **Maandelijkse inleg** wordt aan het *begin* van elke maand gestort (annuïteit
   *vooruitbetaald*), dus de eerste inleg valt op de startdatum.
+* **Indexatie**: de maandinleg wordt op elke ‘verjaardag’ van de startdatum met `g`
+  verhoogd; binnen een looptijdjaar is hij constant. Zonder indexatie is `g = 0` en is
+  `PMT_m = PMT`.
 * **Extra eenmalige stortingen** worden toegewezen aan de maand waarin hun datum valt,
   gerekend vanaf de startdatum: `m = volle maanden(startdatum → stortingsdatum)`.
   Stortingen vóór de startdatum of op/na de einddatum vallen buiten de looptijd; de UI
@@ -53,7 +57,7 @@ met beginwaarde `B = P` en `E_m` de som van alle extra eenmalige stortingen in m
 
 ### Controle met de gesloten formule
 
-Zonder extra stortingen is de simulatie gelijk aan de bekende formule voor toekomstige
+Zonder extra stortingen en zonder indexatie is de simulatie gelijk aan de bekende formule voor toekomstige
 waarde met vooruitbetaalde annuïteit:
 
 ```
@@ -67,7 +71,7 @@ verifieert dit tot op 6 decimalen.
 
 | Grootheid | Formule |
 |---|---|
-| Totale inleg | `P + n·PMT + Σ E_m` |
+| Totale inleg | `P + Σ PMT_m + Σ E_m` (zonder indexatie: `P + n·PMT + Σ E_m`) |
 | Eindvermogen / eindsaldo | `B_n` |
 | Behaald rendement / ontvangen rente (€) | `B_n − totale inleg` |
 | Rendement (%) | `(B_n − totale inleg) / totale inleg` |
@@ -105,6 +109,19 @@ PMT_beleggen = M · s
 PMT_sparen   = M · (1 − s)
 ```
 
+### Indexatie van de maandinleg
+
+Met *Maandinleg jaarlijks indexeren* stijgt de maandinleg van beide modules elk jaar:
+
+* **Gelijk aan inflatie** (aangevinkt): `g` = de inflatie-aanname van de betreffende
+  module (beleggen en sparen elk hun eigen inflatie, inclusief scenario-afwijking). De
+  inleg blijft daarmee in reële termen constant.
+* **Eigen percentage** (niet aangevinkt): `g` = het ingevulde percentage, voor beide
+  modules gelijk.
+
+De indexatie geldt ook in de handmatige modus en bij de berekening ‘+10/25/50% inleg’
+(daar wordt de start-maandinleg vermenigvuldigd en vervolgens geïndexeerd).
+
 ## 7. Scenario’s
 
 Elk scenario past procentpunt-afwijkingen toe op de invoer en draait het volledige model
@@ -136,4 +153,5 @@ De afwijkingen zijn in de app aan te passen (“Scenario-aannames aanpassen”).
   returns*). Werkelijke rendementen schommelen.
 * Geen belasting (box 3), transactiekosten of fondskosten apart gemodelleerd – verwerk
   kosten door een netto rendement in te voeren.
-* Maandinleg wordt niet geïndexeerd met inflatie.
+* Indexatie gebeurt in jaarlijkse stappen, niet maandelijks; extra eenmalige stortingen
+  worden niet geïndexeerd.

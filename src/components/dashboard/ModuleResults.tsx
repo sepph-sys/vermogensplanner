@@ -1,6 +1,6 @@
 import type { ModelResult } from '../../lib/model';
 import type { ChartColors } from '../../lib/chartTheme';
-import { formatEUR, formatEURSigned, formatPct, formatPctSigned } from '../../lib/format';
+import { formatEUR, formatEURSigned, formatNumber, formatPct, formatPctSigned } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { Stat } from '../ui/Stat';
 import { IconPiggy, IconTrend } from '../ui/icons';
@@ -14,9 +14,13 @@ interface Props {
 export function ModuleResults({ model, colors }: Props) {
   const { invest, savings } = model;
   const investRealGain = invest.realFinal - invest.totalContributed;
+
+  /** "€ 700 per maand" of "€ 700 per maand · +2,5%/jr → € 1.428" */
+  const monthlyLabel = (start: number, index: number, last: number) =>
+    index ? `${formatEUR(start)} per maand · ${index > 0 ? '+' : ''}${formatNumber(index)}%/jr → ${formatEUR(last)}` : `${formatEUR(start)} per maand`;
   return (
     <div className="grid-2 modules">
-      <Card title="Resultaat beleggen" subtitle={`${formatEUR(model.monthlyInvest)} per maand`} icon={<IconTrend />} className="accent-invest" >
+      <Card title="Resultaat beleggen" subtitle={monthlyLabel(model.monthlyInvest, model.indexInvest, invest.finalMonthly)} icon={<IconTrend />} className="accent-invest" >
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(invest.totalContributed)} />
           <Stat label="Behaald rendement" value={formatEURSigned(invest.totalGrowth)} tone={invest.totalGrowth >= 0 ? 'positive' : 'negative'} sub={`${formatPctSigned(invest.growthPct)} op inleg`} />
@@ -26,7 +30,7 @@ export function ModuleResults({ model, colors }: Props) {
         <ReturnBar contributed={invest.totalContributed} growth={invest.totalGrowth} color={colors.invest} label="rendement" />
       </Card>
 
-      <Card title="Resultaat sparen" subtitle={`${formatEUR(model.monthlySavings)} per maand`} icon={<IconPiggy />} className="accent-savings">
+      <Card title="Resultaat sparen" subtitle={monthlyLabel(model.monthlySavings, model.indexSavings, savings.finalMonthly)} icon={<IconPiggy />} className="accent-savings">
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(savings.totalContributed)} />
           <Stat label="Ontvangen rente" value={formatEURSigned(savings.totalGrowth)} tone={savings.totalGrowth >= 0 ? 'positive' : 'negative'} sub={`${formatPctSigned(savings.growthPct)} op inleg`} />

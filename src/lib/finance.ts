@@ -8,6 +8,9 @@
  *  - De startinleg staat er op t = 0.
  *  - Maandelijkse inleg wordt aan het BEGIN van elke maand gestort
  *    (annuïteit 'due'), dus ook direct op de startdatum.
+ *  - Optionele jaarlijkse indexatie g: de maandinleg in looptijdjaar k
+ *    (k = 0, 1, …, gerekend vanaf de startdatum) is PMT·(1 + g)^k. De
+ *    verhoging gaat dus in op elke 'verjaardag' van de startdatum.
  *  - Extra eenmalige stortingen worden aan het begin van de maand gestort
  *    waarin hun datum valt (gerekend vanaf de startdatum). Stortingen vóór de
  *    start of op/na de einddatum vallen buiten de looptijd en tellen niet mee.
@@ -35,6 +38,8 @@ export interface SimulationParams {
   annualRate: number;
   /** Gemiddelde jaarlijkse inflatie in procenten. */
   inflation: number;
+  /** Jaarlijkse indexatie van de maandinleg in procenten (0 = vast bedrag). */
+  indexation?: number;
   deposits?: Deposit[];
 }
 
@@ -65,10 +70,12 @@ export interface SimulationResult {
   inflationLoss: number;
   /**
    * Eerste maand waarin de maandelijkse groei (rente/rendement) groter is dan
-   * de maandelijkse inleg – een bekend FIRE-kantelpunt. `null` als dit niet
+   * de (geïndexeerde) maandelijkse inleg – een bekend FIRE-kantelpunt. `null` als dit niet
    * binnen de looptijd gebeurt.
    */
   crossoverMonth: number | null;
+  /** Maandinleg in de laatste maand van de looptijd (na indexatie). */
+  finalMonthly: number;
   /** Extra stortingen die buiten de looptijd vallen (genegeerd). */
   ignoredDeposits: Deposit[];
 }
@@ -96,7 +103,7 @@ const safe = (n: number) => (Number.isFinite(n) ? n : 0);
  * Simuleer de waardeontwikkeling maand voor maand.
  *
  * Per maand m (0 … n−1):
- *   1. B ← B + maandinleg + extra stortingen in maand m
+ *   1. B ← B + PMT·(1+g)^⌊m/12⌋ + extra stortingen in maand m
  *   2. B ← B × (1 + r_m)
  */
 export function simulate(p: SimulationParams): SimulationResult {
@@ -104,6 +111,9 @@ export function simulate(p: SimulationParams): SimulationResult {
   const r = monthlyRate(safe(p.annualRate));
   const initial = safe(p.initial);
   const monthly = safe(p.monthly);
+  const g = Math.max(safe(p.indexation ?? 0), -99.99) / 100;
+  /** Geïndexeerde maandinleg in maand m. */
+  const monthlyAt = (m: number) => monthly * Math.pow(1 + g, Math.floor(m / 12));
 
   // Extra stortingen groeperen per maandindex.
   const extra = new Array<number>(n).fill(0);
@@ -124,14 +134,15 @@ export function simulate(p: SimulationParams): SimulationResult {
   ];
 
   for (let m = 0; m < n; m++) {
-    const deposit = monthly + extra[m];
+    const monthlyNow = monthlyAt(m);
+    const deposit = monthlyNow + extra[m];
     balance += deposit;
     contributed += deposit;
 
     const growth = balance * r;
     balance += growth;
 
-    if (crossoverMonth === null && monthly > 0 && growth >= monthly) {
+    if (crossoverMonth === null && monthlyNow > 0 && growth >= monthlyNow) {
       crossoverMonth = m + 1;
     }
 
@@ -158,6 +169,7 @@ export function simulate(p: SimulationParams): SimulationResult {
     realFinal,
     inflationLoss: finalBalance - realFinal,
     crossoverMonth,
+    finalMonthly: n > 0 ? monthlyAt(n - 1) : monthly,
     ignoredDeposits,
   };
 }

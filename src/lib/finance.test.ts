@@ -57,6 +57,18 @@ describe('simulate', () => {
     expect(r.ignoredDeposits).toHaveLength(2);
   });
 
+  it('indexeert de maandinleg jaarlijks op de verjaardag van de start', () => {
+    const r = simulate({ ...base, endDate: '2030-01-01', initial: 0, monthly: 100, annualRate: 0, indexation: 10 });
+    expect(r.totalContributed).toBeCloseTo(12 * 100 + 12 * 110 + 12 * 121, 8);
+    expect(r.finalMonthly).toBeCloseTo(121, 8);
+  });
+
+  it('indexatie 0% is gelijk aan een vaste inleg', () => {
+    const a = simulate({ ...base, initial: 500, monthly: 250, annualRate: 6 });
+    const b = simulate({ ...base, initial: 500, monthly: 250, annualRate: 6, indexation: 0 });
+    expect(b.finalBalance).toBe(a.finalBalance);
+  });
+
   it('reële waarde is nominaal gedeeld door de inflatiefactor', () => {
     const r = simulate({ ...base, initial: 1000, monthly: 0, annualRate: 0 });
     expect(r.realFinal).toBeCloseTo(1000 / Math.pow(1.02, 30), 8);

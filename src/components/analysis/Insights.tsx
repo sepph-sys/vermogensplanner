@@ -93,7 +93,7 @@ export function Insights({ state, model, colors }: Props) {
             <thead>
               <tr>
                 <th>Inleg</th>
-                <th className="num">Per maand</th>
+                <th className="num">{state.budget.indexEnabled ? 'Start per maand' : 'Per maand'}</th>
                 <th className="num">Eindvermogen</th>
                 <th className="hide-sm">Vergelijking</th>
                 <th className="num">Extra vermogen</th>

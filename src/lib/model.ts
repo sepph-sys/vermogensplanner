@@ -19,6 +19,12 @@ export interface BudgetState {
   investShare: number;
   /** Als true bepaalt het budget de maandinleg van beide modules. */
   autoSplit: boolean;
+  /** Maandinleg jaarlijks indexeren (geldt voor beide modules). */
+  indexEnabled: boolean;
+  /** Indexatie gelijk aan de inflatie van de betreffende module. */
+  indexFollowsInflation: boolean;
+  /** Eigen indexatiepercentage per jaar (alleen als niet gelijk aan inflatie). */
+  indexRate: number;
 }
 
 export interface InvestState {
@@ -72,6 +78,9 @@ export interface ModelTotals {
 export interface ModelResult {
   monthlyInvest: number;
   monthlySavings: number;
+  /** Toegepaste jaarlijkse indexatie (%) per module; 0 = vaste inleg. */
+  indexInvest: number;
+  indexSavings: number;
   invest: SimulationResult;
   savings: SimulationResult;
   totals: ModelTotals;
@@ -87,9 +96,23 @@ export function effectiveMonthly(state: PlannerState): { invest: number; savings
   return { invest: state.invest.monthly, savings: state.savings.monthly };
 }
 
+/**
+ * Jaarlijkse indexatie per module. Bij 'gelijk aan inflatie' volgt elke module
+ * haar eigen inflatie-aanname (inclusief scenario-afwijking), zodat de inleg
+ * in reële termen constant blijft.
+ */
+export function indexationRates(state: PlannerState, o: ModelOverrides = {}): { invest: number; savings: number } {
+  const b = state.budget;
+  if (!b.indexEnabled) return { invest: 0, savings: 0 };
+  if (!b.indexFollowsInflation) return { invest: b.indexRate, savings: b.indexRate };
+  const d = o.inflationDelta ?? 0;
+  return { invest: state.invest.inflation + d, savings: state.savings.inflation + d };
+}
+
 export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResult {
   const f = o.monthlyFactor ?? 1;
   const m = effectiveMonthly(state);
+  const idx = indexationRates(state, o);
   const { startDate, endDate } = state.period;
 
   const invest = simulate({
@@ -99,6 +122,7 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
     monthly: m.invest * f,
     annualRate: state.invest.annualReturn + (o.returnDelta ?? 0),
     inflation: state.invest.inflation + (o.inflationDelta ?? 0),
+    indexation: idx.invest,
     deposits: state.invest.deposits,
   });
 
@@ -109,6 +133,7 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
     monthly: m.savings * f,
     annualRate: state.savings.annualRate + (o.savingsDelta ?? 0),
     inflation: state.savings.inflation + (o.inflationDelta ?? 0),
+    indexation: idx.savings,
   });
 
   const final = invest.finalBalance + savings.finalBalance;
@@ -118,6 +143,8 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
   return {
     monthlyInvest: m.invest * f,
     monthlySavings: m.savings * f,
+    indexInvest: idx.invest,
+    indexSavings: idx.savings,
     invest,
     savings,
     totals: {
@@ -143,7 +170,14 @@ export function createSampleState(): PlannerState {
   const y = Number(start.slice(0, 4));
   return {
     period: { startDate: start, endDate: addMonths(start, 30 * 12) },
-    budget: { amount: 1000, investShare: 70, autoSplit: true },
+    budget: {
+      amount: 1000,
+      investShare: 70,
+      autoSplit: true,
+      indexEnabled: false,
+      indexFollowsInflation: true,
+      indexRate: 2,
+    },
     invest: {
       initial: 10000,
       monthly: 700,

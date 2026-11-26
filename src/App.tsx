@@ -68,7 +68,15 @@ export function App() {
       <div className="layout">
         <aside className="sidebar" aria-label="Invoer">
           <PeriodPanel period={state.period} onChange={patch('period')} />
-          <BudgetPanel budget={state.budget} colors={colors} onChange={patch('budget')} />
+          <BudgetPanel
+            budget={state.budget}
+            inflation={{ invest: state.invest.inflation, savings: state.savings.inflation }}
+            firstMonthly={model.monthlyInvest + model.monthlySavings}
+            lastMonthly={model.invest.finalMonthly + model.savings.finalMonthly}
+            months={model.invest.months}
+            colors={colors}
+            onChange={patch('budget')}
+          />
           <InvestPanel
             invest={state.invest}
             monthly={model.monthlyInvest}

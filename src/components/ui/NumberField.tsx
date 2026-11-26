@@ -14,6 +14,9 @@ interface NumberFieldProps {
   hint?: string;
   disabled?: boolean;
   compact?: boolean;
+  /** Toon een leeg veld (met placeholder) zolang het veld uitgeschakeld is. */
+  emptyWhenDisabled?: boolean;
+  placeholder?: string;
 }
 
 /**
@@ -34,6 +37,8 @@ export function NumberField({
   hint,
   disabled,
   compact,
+  emptyWhenDisabled,
+  placeholder,
 }: NumberFieldProps) {
   const id = useId();
   const [focused, setFocused] = useState(false);
@@ -71,7 +76,8 @@ export function NumberField({
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          value={text}
+          value={disabled && emptyWhenDisabled ? '' : text}
+          placeholder={placeholder}
           disabled={disabled}
           onFocus={() => setFocused(true)}
           onBlur={() => {

@@ -15,6 +15,8 @@ Alle berekeningen gebeuren in de browser; er is geen backend en er wordt niets v
 - **Maandbudget** – één vrij besteedbaar maandbedrag dat via slider, percentage of
   snelkeuzes (80/20, 70/30, …) over beleggen en sparen wordt verdeeld. Alles herberekent
   direct. Uit te zetten voor handmatige invoer per module.
+- **Indexatie** – laat de maandinleg jaarlijks meegroeien, gelijk aan de inflatie of met
+  een eigen percentage.
 - **Dashboard** – belegd vermogen, spaarsaldo, totaal vermogen en koopkrachtgecorrigeerd
   vermogen, plus een interactieve grafiek (nominaal/reëel) van beleggingen, sparen,
   totaal vermogen en eigen inleg.
@@ -63,7 +65,9 @@ Source: GitHub Actions**. De app staat daarna op
 
 1. **Looptijd** – kies start- en einddatum, of een snelkeuze van 10–40 jaar.
 2. **Maandbudget** – vul je vrij besteedbare bedrag in en schuif de verdeling.
-   Zet de schakelaar uit om de maandinleg per module zelf in te vullen.
+   Zet de schakelaar uit om de maandinleg per module zelf in te vullen. Zet
+   *Maandinleg jaarlijks indexeren* aan om de inleg elk jaar te verhogen: laat
+   *Gelijk aan inflatie* aangevinkt, of vink het uit en vul een eigen percentage in.
 3. **Beleggen / Sparen** – vul startbedragen, rendement/rente en inflatie in en voeg
    eventuele extra stortingen toe (bonus, erfenis, vakantiegeld). Stortingen buiten de
    looptijd worden rood gemarkeerd en niet meegeteld.

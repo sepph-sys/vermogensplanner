@@ -436,6 +436,40 @@ small,
   outline-offset: 2px;
 }
 
+/* ---------- Checkbox & indexatie ---------- */
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent-solid);
+}
+
+.index-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.index-result {
+  margin: 0;
+}
+
+.subsection .switch {
+  margin-bottom: 10px;
+}
+
 /* ---------- Split slider ---------- */
 .split {
   display: flex;
