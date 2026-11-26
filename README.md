@@ -52,6 +52,13 @@ Open daarna de URL die Vite toont (standaard <http://localhost:5173>).
 De map `dist/` is een statische site en kan op elke webserver of statische host
 (GitHub Pages, Netlify, …) worden gezet; paden zijn relatief.
 
+### Online versie (GitHub Pages)
+
+De workflow `.github/workflows/deploy.yml` test, bouwt en publiceert de app bij elke
+push naar `main`. Eenmalig instellen: **Settings → Pages → Build and deployment →
+Source: GitHub Actions**. De app staat daarna op
+<https://sepph-sys.github.io/vermogensplanner/>.
+
 ## Gebruik
 
 1. **Looptijd** – kies start- en einddatum, of een snelkeuze van 10–40 jaar.
