@@ -237,28 +237,6 @@ small,
   }
 }
 
-/* Inleg: maandbudget links, inlegtabel rechts */
-.inleg-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .inleg-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.manual-box {
-  margin-top: 12px;
-}
-
-.manual-box p {
-  margin: 0;
-}
-
 .input-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -661,20 +639,6 @@ small,
 .checkbox-hint {
   display: block;
   margin: 4px 0 0 24px;
-}
-
-.index-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-}
-
-.index-result {
-  margin: 0;
 }
 
 .subsection .switch {
@@ -1321,6 +1285,119 @@ input[type='range']::-moz-range-thumb {
 
 .years-table td.is-set .input-wrap input {
   font-weight: 650;
+}
+
+/* Inlegtabel: groepskoppen, subregels */
+.contrib-table {
+  min-width: 1180px;
+}
+
+.edit-table tr.group-head th {
+  padding: 14px 8px 6px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.edit-table tbody tr.group-head:first-child th {
+  padding-top: 6px;
+}
+
+.cell-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.cell-stack {
+  margin-top: 4px;
+}
+
+.empty-row {
+  padding: 10px 8px !important;
+}
+
+/* Samenvatting vaste inleg bovenaan de inlegpagina */
+.recurring-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.rs-head > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rs-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rs-total small {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.rs-split {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+.rs-split span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rs-split strong {
+  color: var(--text);
+}
+
+.rs-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.86rem;
+}
+
+.rs-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.rs-label {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  color: var(--text-2);
 }
 
 /* Select in dezelfde stijl als de invoervelden */

@@ -55,7 +55,7 @@ export function NumberField({
   const [focused, setFocused] = useState(false);
   const [text, setText] = useState(() => fmt(value));
 
-  // Externe wijzigingen (bv. door de budgetslider) doorvoeren als het veld niet actief is.
+  // Externe wijzigingen (bv. reset of andere velden) doorvoeren als het veld niet actief is.
   useEffect(() => {
     if (!focused) setText(fmt(value));
   }, [value, decimals, focused, noGrouping]);

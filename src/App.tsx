@@ -6,8 +6,8 @@ import { chartColors } from './lib/chartTheme';
 import { formatDate } from './lib/dates';
 import { formatDuration } from './lib/format';
 import { PeriodPanel } from './components/inputs/PeriodPanel';
-import { BudgetPanel } from './components/inputs/BudgetPanel';
-import { DepositsTable } from './components/inputs/DepositsTable';
+import { ContributionsTable } from './components/inputs/ContributionsTable';
+import { RecurringSummary } from './components/inputs/RecurringSummary';
 import { AssumptionsPanel } from './components/inputs/AssumptionsPanel';
 import { Box3Panel } from './components/inputs/Box3Panel';
 import { KpiRow } from './components/dashboard/KpiRow';
@@ -100,31 +100,17 @@ export function App() {
 
         {tab === 'inleg' && (
           <>
-            <TabIntro title="Inleg" text="Maandbudget, verdeling tussen sparen en beleggen, indexatie, startbedragen en eenmalige stortingen. Wijzigingen zie je direct terug in het dashboard." />
-            <div className="inleg-grid">
-              <BudgetPanel
-                budget={state.budget}
-                inflation={state.assumptions.inflation}
-                inflationPerYear={state.assumptions.years.some((y) => y.inflation !== null)}
-                manual={{ invest: state.invest.monthly, savings: state.savings.monthly }}
-                onManualChange={(m) => setState((s) => ({ ...s, invest: { ...s.invest, monthly: m.invest }, savings: { ...s.savings, monthly: m.savings } }))}
-                firstMonthly={model.monthlyInvest + model.monthlySavings}
-                lastMonthly={model.invest.finalMonthly + model.savings.finalMonthly}
-                months={model.invest.months}
-                colors={colors}
-                onChange={patch('budget')}
-              />
-              <DepositsTable
-                invest={state.invest.deposits}
-                savings={state.savings.deposits}
-                initial={{ invest: state.invest.initial, savings: state.savings.initial }}
-                onInitialChange={(i) => setState((s) => ({ ...s, invest: { ...s.invest, initial: i.invest }, savings: { ...s.savings, initial: i.savings } }))}
-                ignored={{ invest: model.invest.ignoredDeposits, savings: model.savings.ignoredDeposits }}
-                startDate={state.period.startDate}
-                colors={colors}
-                onChange={(d) => setState((s) => ({ ...s, invest: { ...s.invest, deposits: d.invest }, savings: { ...s.savings, deposits: d.savings } }))}
-              />
-            </div>
+            <TabIntro title="Inleg" text="Startbedragen, periodieke inleg (dagelijks, maandelijks, per kwartaal of per jaar) en eenmalige stortingen. Wijzigingen zie je direct terug in het dashboard." />
+            <RecurringSummary rows={state.contributions} ignored={model.ignored} model={model} colors={colors} />
+            <ContributionsTable
+              rows={state.contributions}
+              initial={{ invest: state.invest.initial, savings: state.savings.initial }}
+              onInitialChange={(i) => setState((s) => ({ ...s, invest: { initial: i.invest }, savings: { initial: i.savings } }))}
+              ignored={model.ignored}
+              startDate={state.period.startDate}
+              colors={colors}
+              onChange={patch('contributions')}
+            />
           </>
         )}
 

@@ -132,6 +132,11 @@ export interface PotParams {
   inflation: YearRate;
   indexation?: YearRate;
   deposits?: Deposit[];
+  /**
+   * Kant-en-klare kasstroom per maand (uit inlegregels). Als gezet, worden
+   * `monthly`, `indexation` en `deposits` genegeerd.
+   */
+  schedule?: { recurring: number[]; once: number[] };
 }
 
 export interface PlanResult {
@@ -161,6 +166,10 @@ interface PotState {
 }
 
 function initPot(p: PotParams, startDate: string, n: number): PotState {
+  if (p.schedule) {
+    const { recurring, once } = p.schedule;
+    return basePot(p, startDate, (m) => recurring[m] ?? 0, Array.from({ length: n }, (_, m) => once[m] ?? 0), []);
+  }
   const monthly = safe(p.monthly);
   // Indexatiefactor per looptijdjaar k: Π_{j=1..k} (1 + g_j), waarbij g_j het
   // percentage is van het kalenderjaar waarin maand 12j − 1 valt.
@@ -170,8 +179,6 @@ function initPot(p: PotParams, startDate: string, n: number): PotState {
     const g = Math.max(idx(yearOf(addMonths(startDate, 12 * k - 1))), -99.99) / 100;
     factors.push(factors[k - 1] * (1 + g));
   }
-  const ret = rateFn(p.annualRate);
-  const cache = new Map<number, number>();
   const extra = new Array<number>(n).fill(0);
   const ignored: Deposit[] = [];
   for (const dep of p.deposits ?? []) {
@@ -181,6 +188,18 @@ function initPot(p: PotParams, startDate: string, n: number): PotState {
     if (idx >= 0 && idx < n) extra[idx] += amount;
     else ignored.push(dep);
   }
+  return basePot(p, startDate, (m) => monthly * (factors[Math.floor(m / 12)] ?? factors[factors.length - 1]), extra, ignored);
+}
+
+function basePot(
+  p: PotParams,
+  startDate: string,
+  monthlyAt: (m: number) => number,
+  extra: number[],
+  ignored: Deposit[],
+): PotState {
+  const ret = rateFn(p.annualRate);
+  const cache = new Map<number, number>();
   const initial = safe(p.initial);
   return {
     p,
@@ -189,7 +208,7 @@ function initPot(p: PotParams, startDate: string, n: number): PotState {
       if (r === undefined) cache.set(year, (r = monthlyRate(ret(year))));
       return r;
     },
-    monthlyAt: (m) => monthly * (factors[Math.floor(m / 12)] ?? factors[factors.length - 1]),
+    monthlyAt,
     extra,
     ignored,
     balance: initial,

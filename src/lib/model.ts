@@ -5,7 +5,8 @@
  */
 
 import { addMonths, todayISO } from './dates';
-import { simulatePlan, type Deposit, type SimulationResult } from './finance';
+import { horizonMonths, simulatePlan, type Deposit, type SimulationResult } from './finance';
+import { averageMonthly, buildSchedule, type Contribution, type Target } from './contributions';
 import { createDefaultBox3, type Box3Config, type Box3YearResult } from './box3';
 
 export interface PeriodState {
@@ -13,37 +14,27 @@ export interface PeriodState {
   endDate: string;
 }
 
-export interface BudgetState {
-  /** Vrij besteedbaar bedrag per maand. */
-  amount: number;
-  /** Deel dat naar beleggen gaat, 0–100. De rest gaat naar sparen. */
-  investShare: number;
-  /** Als true bepaalt het budget de maandinleg van beide modules. */
-  autoSplit: boolean;
-  /** Maandinleg jaarlijks indexeren (geldt voor beide modules). */
-  indexEnabled: boolean;
-  /** Indexatie gelijk aan de inflatie (incl. afwijkingen per jaar). */
-  indexFollowsInflation: boolean;
-  /** Eigen indexatiepercentage per jaar (alleen als niet gelijk aan inflatie). */
-  indexRate: number;
+/**
+ * Instellingen van het vroegere maandbudget. Alleen nog gebruikt om oude
+ * opgeslagen invoer om te zetten naar inlegregels.
+ */
+interface LegacyBudget {
+  amount?: number;
+  investShare?: number;
+  autoSplit?: boolean;
+  indexEnabled?: boolean;
+  indexFollowsInflation?: boolean;
+  indexRate?: number;
 }
 
 export interface InvestState {
-  /** Startinleg op de startdatum. */
+  /** Startinleg op de startdatum (vaste regel bovenaan de inlegtabel). */
   initial: number;
-  /** Handmatige maandinleg (alleen als het budget niet automatisch verdeelt). */
-  monthly: number;
-  /** Extra eenmalige beleggingen. */
-  deposits: Deposit[];
 }
 
 export interface SavingsState {
-  /** Startsaldo op de startdatum. */
+  /** Startsaldo op de startdatum (vaste regel bovenaan de inlegtabel). */
   initial: number;
-  /** Handmatige maandinleg (alleen als het budget niet automatisch verdeelt). */
-  monthly: number;
-  /** Extra eenmalige stortingen op de spaarrekening. */
-  deposits: Deposit[];
 }
 
 /**
@@ -84,9 +75,10 @@ export interface ScenarioDef {
 
 export interface PlannerState {
   period: PeriodState;
-  budget: BudgetState;
   invest: InvestState;
   savings: SavingsState;
+  /** Alle inlegregels: eenmalig en periodiek, naar beleggen of sparen. */
+  contributions: Contribution[];
   assumptions: AssumptionsState;
   scenarios: ScenarioDef[];
   box3: Box3Config;
@@ -96,7 +88,7 @@ export interface ModelOverrides {
   returnDelta?: number;
   savingsDelta?: number;
   inflationDelta?: number;
-  /** Vermenigvuldigingsfactor voor beide maandinleggen (bv. 1,25 = +25%). */
+  /** Vermenigvuldigingsfactor voor alle periodieke inleg (bv. 1,25 = +25%). */
   monthlyFactor?: number;
   /** Box 3 negeren (voor de vergelijking 'zonder belasting'). */
   noTax?: boolean;
@@ -113,26 +105,19 @@ export interface ModelTotals {
 }
 
 export interface ModelResult {
+  /** Gemiddelde periodieke inleg per maand in het eerste jaar. */
   monthlyInvest: number;
   monthlySavings: number;
-  /** Toegepaste jaarlijkse indexatie (%) per module; 0 = vaste inleg. */
-  indexInvest: number;
-  indexSavings: number;
+  /** Gemiddelde periodieke inleg per maand in het laatste jaar (na indexatie). */
+  lastMonthlyInvest: number;
+  lastMonthlySavings: number;
+  /** Inlegregels zonder storting binnen de looptijd. */
+  ignored: Contribution[];
   invest: SimulationResult;
   savings: SimulationResult;
   /** Box 3-afrekening per kalenderjaar. */
   taxYears: Box3YearResult[];
   totals: ModelTotals;
-}
-
-/** Maandinleg per module: uit het budget (auto) of handmatig ingevoerd. */
-export function effectiveMonthly(state: PlannerState): { invest: number; savings: number } {
-  if (state.budget.autoSplit) {
-    const share = Math.min(Math.max(state.budget.investShare, 0), 100) / 100;
-    const invest = state.budget.amount * share;
-    return { invest, savings: state.budget.amount - invest };
-  }
-  return { invest: state.invest.monthly, savings: state.savings.monthly };
 }
 
 /** Rendement, spaarrente en inflatie als functie van het kalenderjaar. */
@@ -159,25 +144,15 @@ export function yearRates(a: AssumptionsState, o: ModelOverrides = {}): YearRate
   };
 }
 
-/**
- * Jaarlijkse indexatie van de maandinleg. Bij 'gelijk aan inflatie' volgt de
- * indexatie de inflatie per jaar (inclusief scenario-afwijking), zodat de
- * inleg in reële termen constant blijft. `generic` is het percentage voor
- * labels (generieke waarde).
- */
-export function indexation(state: PlannerState, rates: YearRates, o: ModelOverrides = {}) {
-  const b = state.budget;
-  if (!b.indexEnabled) return { fn: 0 as number | ((y: number) => number), generic: 0 };
-  if (!b.indexFollowsInflation) return { fn: b.indexRate as number | ((y: number) => number), generic: b.indexRate };
-  return { fn: rates.inflation, generic: state.assumptions.inflation + (o.inflationDelta ?? 0) };
-}
-
 export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResult {
   const f = o.monthlyFactor ?? 1;
-  const m = effectiveMonthly(state);
   const rates = yearRates(state.assumptions, o);
-  const idx = indexation(state, rates, o);
   const { startDate, endDate } = state.period;
+  const n = horizonMonths(startDate, endDate);
+
+  // Inlegregels → kasstroom per maand, per bestemming.
+  const inv = buildSchedule(state.contributions, 'invest', startDate, n, rates.inflation, f);
+  const sav = buildSchedule(state.contributions, 'savings', startDate, n, rates.inflation, f);
 
   const { invest, savings, taxYears } = simulatePlan(
     startDate,
@@ -185,20 +160,18 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
     {
       kind: 'invest',
       initial: state.invest.initial,
-      monthly: m.invest * f,
+      monthly: 0,
       annualRate: rates.annualReturn,
       inflation: rates.inflation,
-      indexation: idx.fn,
-      deposits: state.invest.deposits,
+      schedule: inv,
     },
     {
       kind: 'savings',
       initial: state.savings.initial,
-      monthly: m.savings * f,
+      monthly: 0,
       annualRate: rates.savingsRate,
       inflation: rates.inflation,
-      indexation: idx.fn,
-      deposits: state.savings.deposits,
+      schedule: sav,
     },
     o.noTax ? undefined : state.box3,
   );
@@ -208,10 +181,11 @@ export function runModel(state: PlannerState, o: ModelOverrides = {}): ModelResu
   const contributed = invest.totalContributed + savings.totalContributed;
 
   return {
-    monthlyInvest: m.invest * f,
-    monthlySavings: m.savings * f,
-    indexInvest: idx.generic,
-    indexSavings: idx.generic,
+    monthlyInvest: averageMonthly(inv.recurring, 'first'),
+    monthlySavings: averageMonthly(sav.recurring, 'first'),
+    lastMonthlyInvest: averageMonthly(inv.recurring, 'last'),
+    lastMonthlySavings: averageMonthly(sav.recurring, 'last'),
+    ignored: [...inv.ignored, ...sav.ignored],
     invest,
     savings,
     taxYears,
@@ -233,29 +207,28 @@ export const DEFAULT_SCENARIOS: ScenarioDef[] = [
 ];
 
 /** Voorbeelddata bij eerste start: 30 jaar opbouwen vanaf de eerstvolgende maand. */
+const row = (c: Partial<Contribution> & Pick<Contribution, 'id' | 'target' | 'frequency' | 'date' | 'amount'>): Contribution => ({
+  endDate: null,
+  index: 'none',
+  indexRate: 2,
+  label: '',
+  ...c,
+});
+
 export function createSampleState(): PlannerState {
   const today = todayISO();
   const start = addMonths(`${today.slice(0, 7)}-01`, 1);
   const y = Number(start.slice(0, 4));
   return {
     period: { startDate: start, endDate: addMonths(start, 30 * 12) },
-    budget: {
-      amount: 1000,
-      investShare: 70,
-      autoSplit: true,
-      indexEnabled: false,
-      indexFollowsInflation: true,
-      indexRate: 2,
-    },
-    invest: {
-      initial: 10000,
-      monthly: 700,
-      deposits: [
-        { id: 'd1', date: `${y + 3}-06-01`, amount: 5000, label: 'Bonus' },
-        { id: 'd2', date: `${y + 10}-01-01`, amount: 20000, label: 'Erfenis' },
-      ],
-    },
-    savings: { initial: 15000, monthly: 300, deposits: [] },
+    invest: { initial: 10000 },
+    savings: { initial: 15000 },
+    contributions: [
+      row({ id: 'r1', target: 'invest', frequency: 'monthly', date: start, amount: 700, label: 'Maandelijkse inleg' }),
+      row({ id: 'r2', target: 'savings', frequency: 'monthly', date: start, amount: 300, label: 'Maandelijks sparen' }),
+      row({ id: 'd1', target: 'invest', frequency: 'once', date: `${y + 3}-06-01`, amount: 5000, label: 'Bonus' }),
+      row({ id: 'd2', target: 'invest', frequency: 'once', date: `${y + 10}-01-01`, amount: 20000, label: 'Erfenis' }),
+    ],
     assumptions: { annualReturn: 7, savingsRate: 2, inflation: 2.5, years: [] },
     scenarios: DEFAULT_SCENARIOS.map((s) => ({ ...s })),
     box3: createDefaultBox3(),
@@ -264,20 +237,29 @@ export function createSampleState(): PlannerState {
 
 const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
+/** Oude stortingen (per module) → eenmalige inlegregels. */
+function legacyDeposits(list: unknown, target: Target): Contribution[] {
+  if (!Array.isArray(list)) return [];
+  return (list as Deposit[]).map((d) =>
+    row({ id: d.id, target, frequency: 'once', date: d.date, amount: num(d.amount, 0), label: d.label ?? '' }),
+  );
+}
+
 /**
  * Valideert/merget een opgeslagen state met de standaardwaarden, zodat een
  * oude of beschadigde localStorage-entry de app nooit laat crashen.
- * Oudere versies bewaarden rendement, rente en inflatie per module; die
- * worden omgezet naar het gezamenlijke `assumptions`-blok.
+ * Oudere versies worden omgezet:
+ *  - rendement/rente/inflatie per module → `assumptions`;
+ *  - maandbudget of handmatige maandinleg → maandelijkse inlegregels;
+ *  - stortingen per module → eenmalige inlegregels.
  */
 export function hydrateState(raw: unknown): PlannerState {
   const base = createSampleState();
   if (!raw || typeof raw !== 'object') return base;
-  const r = raw as Partial<PlannerState> & {
-    invest?: Partial<InvestState> & { annualReturn?: number; inflation?: number };
-    savings?: Partial<SavingsState> & { annualRate?: number; inflation?: number };
-  };
+  type LegacyPot = { initial?: number; monthly?: number; annualReturn?: number; annualRate?: number; inflation?: number; deposits?: unknown };
+  const r = raw as Partial<Omit<PlannerState, 'invest' | 'savings'>> & { invest?: LegacyPot; savings?: LegacyPot; budget?: LegacyBudget };
   const scenarios = Array.isArray(r.scenarios) && r.scenarios.length === 3 ? r.scenarios : base.scenarios;
+  const period = { ...base.period, ...r.period };
   const legacy: AssumptionsState = {
     annualReturn: num(r.invest?.annualReturn, base.assumptions.annualReturn),
     savingsRate: num(r.savings?.annualRate, base.assumptions.savingsRate),
@@ -285,19 +267,35 @@ export function hydrateState(raw: unknown): PlannerState {
     years: [],
   };
   const a = r.assumptions;
+
+  let contributions: Contribution[];
+  if (Array.isArray(r.contributions)) {
+    contributions = r.contributions;
+  } else if (r.invest || r.savings || r.budget) {
+    // Oude opslag: maandinleg uit budget of handmatige velden.
+    const b = r.budget ?? {};
+    const auto = b.autoSplit ?? true;
+    const amount = num(b.amount, 1000);
+    const share = Math.min(Math.max(num(b.investShare, 70), 0), 100) / 100;
+    const mInv = auto ? amount * share : num(r.invest?.monthly, 0);
+    const mSav = auto ? amount - amount * share : num(r.savings?.monthly, 0);
+    const index: Contribution['index'] = !b.indexEnabled ? 'none' : b.indexFollowsInflation === false ? 'custom' : 'inflation';
+    const indexRate = num(b.indexRate, 2);
+    contributions = [
+      ...(mInv ? [row({ id: 'm-invest', target: 'invest', frequency: 'monthly', date: period.startDate, amount: mInv, index, indexRate, label: 'Maandelijkse inleg' })] : []),
+      ...(mSav ? [row({ id: 'm-savings', target: 'savings', frequency: 'monthly', date: period.startDate, amount: mSav, index, indexRate, label: 'Maandelijks sparen' })] : []),
+      ...legacyDeposits(r.invest?.deposits, 'invest'),
+      ...legacyDeposits(r.savings?.deposits, 'savings'),
+    ];
+  } else {
+    contributions = base.contributions;
+  }
+
   return {
-    period: { ...base.period, ...r.period },
-    budget: { ...base.budget, ...r.budget },
-    invest: {
-      initial: num(r.invest?.initial, base.invest.initial),
-      monthly: num(r.invest?.monthly, base.invest.monthly),
-      deposits: Array.isArray(r.invest?.deposits) ? r.invest!.deposits : base.invest.deposits,
-    },
-    savings: {
-      initial: num(r.savings?.initial, base.savings.initial),
-      monthly: num(r.savings?.monthly, base.savings.monthly),
-      deposits: Array.isArray(r.savings?.deposits) ? r.savings!.deposits : r.savings ? [] : base.savings.deposits,
-    },
+    period,
+    invest: { initial: num(r.invest?.initial, base.invest.initial) },
+    savings: { initial: num(r.savings?.initial, base.savings.initial) },
+    contributions,
     assumptions: a
       ? {
           annualReturn: num(a.annualReturn, legacy.annualReturn),

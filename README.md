@@ -12,11 +12,10 @@ Alle berekeningen gebeuren in de browser; er is geen backend en er wordt niets v
   Toont per module totale inleg, rendement/rente (€ en %), eindwaarde en reële eindwaarde.
 - **Rendement & inflatie** – één generiek rendement, spaarrente en inflatie voor de hele
   app, met optionele afwijkende waarden per kalenderjaar.
-- **Maandbudget** – één vrij besteedbaar maandbedrag dat via slider, percentage of
-  snelkeuzes (80/20, 70/30, …) over beleggen en sparen wordt verdeeld. Alles herberekent
-  direct. Uit te zetten voor handmatige invoer per module.
-- **Indexatie** – laat de maandinleg jaarlijks meegroeien, gelijk aan de inflatie of met
-  een eigen percentage.
+- **Inleg** – één tabel met startinleg/startsaldo (vaste regels), periodieke inleg
+  (dagelijks, maandelijks, per kwartaal of per jaar, met optionele einddatum en indexatie
+  met inflatie of een eigen percentage) en eenmalige stortingen, naar beleggen of sparen.
+  Bovenaan een samenvatting van de vaste inleg in het model.
 - **Box 3-belasting** – forfaitair stelsel (2026, 2027) en werkelijk-rendementstelsel
   (beoogd vanaf 2028), met per periode aanpasbare grondslagwaarden: heffingsvrij
   vermogen/resultaat, forfaits, tarief en verliesdrempel. Optie voor fiscale partners en
@@ -81,15 +80,17 @@ De app heeft vier tabbladen (ook direct te openen via `#dashboard`, `#inleg`,
    effect van een hogere inleg.
 
 **Inleg**
-1. **Maandbudget**: vul je vrij besteedbare bedrag in en schuif de verdeling. Zet
-   *Verdeel automatisch* uit om de maandinleg voor beleggen en sparen zelf in te vullen.
-   Zet *Maandinleg jaarlijks indexeren* aan om de inleg elk jaar te verhogen: laat
-   *Gelijk aan inflatie* aangevinkt, of vink het uit en vul een eigen percentage in.
-2. **Eenmalige inleg**: bovenaan twee vaste regels voor de **startinleg beleggen** en het
-   **startsaldo sparen** (op de startdatum). Daaronder extra stortingen (bonus, erfenis,
-   vakantiegeld) voor beleggen én sparen; per regel kies je bestemming, datum, bedrag en
-   omschrijving. Onderaan staat het totaal per bestemming. Stortingen buiten de looptijd
-   worden rood gemarkeerd en niet meegeteld.
+1. Bovenaan staat een korte **samenvatting van de vaste inleg**: totaal per maand,
+   verdeling beleggen/sparen en alle periodieke regels.
+2. In de tabel **Inleg** staan alle regels:
+   - **Startbedragen**: twee vaste regels voor startinleg beleggen en startsaldo sparen.
+   - **Periodieke inleg**: kies bestemming, frequentie (dagelijks, maandelijks, per
+     kwartaal, per jaar), ‘vanaf’, optioneel ‘t/m’ (leeg = tot het einde van de
+     looptijd), bedrag en indexatie (*Geen*, *Inflatie* of *Eigen %*).
+   - **Eenmalige stortingen**: bestemming, datum, bedrag en omschrijving.
+   Onderaan staat per bestemming het totaal aan start- en eenmalige inleg en de
+   periodieke inleg per maand. Regels zonder storting binnen de looptijd worden rood
+   gemarkeerd en tellen niet mee.
 
 **Rendement & inflatie**
 1. Bovenaan de **generieke** waarden: jaarrendement beleggen, spaarrente en inflatie. Deze
@@ -132,6 +133,7 @@ vermogensplanner/
     ├── lib/
     │   ├── finance.ts         # Rekenkern: maandsimulatie, rente, inflatie
     │   ├── finance.test.ts    # Tests (o.a. tegen gesloten annuïteitenformule)
+    │   ├── contributions.ts   # Inlegregels → kasstroom per maand (frequentie, indexatie)
     │   ├── box3.ts            # Box 3: perioden, forfaitair en werkelijk rendement
     │   ├── box3.test.ts       # Tests van de box 3-berekening
     │   ├── model.ts           # State-types, voorbeelddata, beleggen+sparen-model
@@ -144,7 +146,7 @@ vermogensplanner/
     │   └── useTheme.ts
     └── components/
         ├── ui/                # Card, Stat, Tabs, NumberField, DateField, Segmented, iconen
-        ├── inputs/            # Analyseperiode, Maandbudget, Eenmalige inleg, Rendement & inflatie, Box 3
+        ├── inputs/            # Analyseperiode, inlegtabel + samenvatting, Rendement & inflatie, Box 3
         ├── dashboard/         # KPI-rij, groeigrafiek, resultaten per module
         └── analysis/          # Scenario's, inzichten, box 3-overzicht
 ```

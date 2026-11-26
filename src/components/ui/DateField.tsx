@@ -11,6 +11,9 @@ interface DateFieldProps {
   max?: string;
   compact?: boolean;
   hideLabel?: boolean;
+  /** Leeg veld toegestaan; leegmaken geeft onChange(''). */
+  allowEmpty?: boolean;
+  placeholder?: string;
 }
 
 /**
@@ -24,7 +27,7 @@ interface DateFieldProps {
  *   vorige geldige waarde blijft in de berekening staan.
  * - De kalenderknop opent de native datumkiezer van de browser.
  */
-export function DateField({ label, value, onChange, min, max, compact, hideLabel }: DateFieldProps) {
+export function DateField({ label, value, onChange, min, max, compact, hideLabel, allowEmpty, placeholder = 'dd/mm/jjjj' }: DateFieldProps) {
   const id = useId();
   const pickerRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(() => formatDMY(value));
@@ -43,6 +46,12 @@ export function DateField({ label, value, onChange, min, max, compact, hideLabel
 
   const commit = (raw: string) => {
     if (!raw.trim()) {
+      if (allowEmpty) {
+        setError(null);
+        setText('');
+        if (value !== '') onChange('');
+        return;
+      }
       setError('Vul een datum in (dd/mm/jjjj).');
       return;
     }
@@ -94,7 +103,7 @@ export function DateField({ label, value, onChange, min, max, compact, hideLabel
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          placeholder="dd/mm/jjjj"
+          placeholder={placeholder}
           value={text}
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-err` : undefined}

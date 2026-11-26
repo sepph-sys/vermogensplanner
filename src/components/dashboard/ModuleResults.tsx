@@ -1,6 +1,6 @@
 import type { ModelResult } from '../../lib/model';
 import type { ChartColors } from '../../lib/chartTheme';
-import { formatEUR, formatEURSigned, formatNumber, formatPct, formatPctSigned } from '../../lib/format';
+import { formatEUR, formatEURSigned, formatPct, formatPctSigned } from '../../lib/format';
 import { Card } from '../ui/Card';
 import { Stat } from '../ui/Stat';
 import { IconPiggy, IconTrend } from '../ui/icons';
@@ -16,11 +16,12 @@ export function ModuleResults({ model, colors }: Props) {
   const investRealGain = invest.realFinal - invest.totalContributed;
 
   /** "€ 700 per maand" of "€ 700 per maand · +2,5%/jr → € 1.428" */
-  const monthlyLabel = (start: number, index: number, last: number) =>
-    index ? `${formatEUR(start)} per maand · ${index > 0 ? '+' : ''}${formatNumber(index)}%/jr → ${formatEUR(last)}` : `${formatEUR(start)} per maand`;
+  /** "≈ € 700 per maand" of "≈ € 700 per maand → € 1.432 in het laatste jaar" */
+  const monthlyLabel = (first: number, last: number) =>
+    `≈ ${formatEUR(first)} per maand${Math.abs(last - first) > 1 ? ` → ${formatEUR(last)} in het laatste jaar` : ''}`;
   return (
     <div className="grid-2 modules">
-      <Card title="Resultaat beleggen" subtitle={monthlyLabel(model.monthlyInvest, model.indexInvest, invest.finalMonthly)} icon={<IconTrend />} className="accent-invest" >
+      <Card title="Resultaat beleggen" subtitle={monthlyLabel(model.monthlyInvest, model.lastMonthlyInvest)} icon={<IconTrend />} className="accent-invest" >
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(invest.totalContributed)} />
           <Stat
@@ -35,7 +36,7 @@ export function ModuleResults({ model, colors }: Props) {
         <ReturnBar contributed={invest.totalContributed} growth={invest.totalGrowth} color={colors.invest} label="rendement" />
       </Card>
 
-      <Card title="Resultaat sparen" subtitle={monthlyLabel(model.monthlySavings, model.indexSavings, savings.finalMonthly)} icon={<IconPiggy />} className="accent-savings">
+      <Card title="Resultaat sparen" subtitle={monthlyLabel(model.monthlySavings, model.lastMonthlySavings)} icon={<IconPiggy />} className="accent-savings">
         <div className="stat-grid">
           <Stat label="Totale inleg" value={formatEUR(savings.totalContributed)} />
           <Stat

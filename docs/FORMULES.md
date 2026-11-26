@@ -61,7 +61,7 @@ B ← B + PMT_m + E_m      (stortingen aan het begin van de maand)
 B ← B · (1 + r)          (groei over de maand)
 ```
 
-met `PMT_m = PMT · (1 + g)^⌊m/12⌋`, beginwaarde `B = P` en `E_m` de som van alle extra eenmalige stortingen in maand `m`.
+met `PMT_m` de periodieke inleg en `E_m` de eenmalige stortingen in maand `m` (zie §6), beginwaarde `B = P`.
 
 * **Maandelijkse inleg** wordt aan het *begin* van elke maand gestort (annuïteit
   *vooruitbetaald*), dus de eerste inleg valt op de startdatum.
@@ -125,28 +125,41 @@ beide reële waarden.
 > de inleg. Dat is een eenvoudige, conservatieve vuistregel – latere stortingen hebben
 > door inflatie in werkelijkheid ook minder koopkracht.
 
-## 6. Maandbudget
+## 6. Inlegregels (periodiek en eenmalig)
 
-Bij *automatisch verdelen* geldt, met budget `M` en aandeel beleggen `s` (0–100%):
+Code: [`src/lib/contributions.ts`](../src/lib/contributions.ts). Alle inleg bestaat uit
+regels met bestemming (beleggen/sparen), frequentie, datum/vanaf, optioneel t/m, bedrag
+`A`, indexatie en omschrijving. Startinleg en startsaldo zijn vaste regels op de
+startdatum (`P`). Elke regel wordt omgezet naar een bedrag per simulatiemaand; dat bedrag
+wordt aan het begin van die maand gestort.
 
-```
-PMT_beleggen = M · s
-PMT_sparen   = M · (1 − s)
-```
+| Frequentie | Stortingsmomenten | Bedrag in maand `m` |
+|---|---|---|
+| Eenmalig | datum | `A` |
+| Maandelijks | vanaf, vanaf + 1 mnd, … t/m | `A · I` |
+| Per kwartaal | vanaf, vanaf + 3 mnd, … t/m | `A · I` |
+| Per jaar | vanaf, vanaf + 12 mnd, … t/m | `A · I` |
+| Dagelijks | elke kalenderdag vanaf … t/m | `A · dagen_m · I` |
 
-### Indexatie van de maandinleg
+`dagen_m` = aantal kalenderdagen van de regel binnen simulatiemaand `m`. Zonder t/m loopt
+de regel door tot het einde van de looptijd. Een regel zonder enige storting binnen de
+looptijd wordt gemarkeerd en telt niet mee.
 
-Met *Maandinleg jaarlijks indexeren* stijgt de maandinleg van beide modules elk jaar:
+**Indexatie** `I` (per regel): na `k` volle jaren sinds ‘vanaf’ is
+`I = Π_{j=1..k} (1 + g_j)`, met
 
-* **Gelijk aan inflatie** (aangevinkt): op de `j`-de verjaardag van de startdatum is
-  `g_j` = de inflatie van het kalenderjaar waarin maand `12j − 1` valt (inclusief
-  afwijkingen per jaar en scenario-afwijking). De maandinleg in looptijdjaar `k` is dan
-  `PMT · Π_{j=1..k} (1 + g_j)`, en blijft in reële termen ongeveer constant.
-* **Eigen percentage** (niet aangevinkt): `g` = het ingevulde percentage, voor beide
-  modules gelijk.
+* *Geen*: `g_j = 0`;
+* *Inflatie*: `g_j` = inflatie van het kalenderjaar waarin maand `12j − 1` na ‘vanaf’ valt
+  (inclusief afwijkingen per jaar en scenario-afwijking) – de inleg blijft reëel ongeveer
+  constant;
+* *Eigen %*: `g_j` = het ingevulde percentage.
 
-De indexatie geldt ook in de handmatige modus en bij de berekening ‘+10/25/50% inleg’
-(daar wordt de start-maandinleg vermenigvuldigd en vervolgens geïndexeerd).
+**Maandequivalent** (samenvatting): maandelijks `A`, per kwartaal `A/3`, per jaar
+`A/12`, dagelijks `A · 365,25/12`. Het dashboard toont daarnaast de gemiddelde periodieke
+inleg per maand in het eerste en het laatste jaar van de looptijd.
+
+**Hogere inleg (+10/25/50%)** vermenigvuldigt alle periodieke bedragen; startbedragen en
+eenmalige stortingen blijven gelijk.
 
 ## 7. Scenario’s
 
@@ -165,7 +178,7 @@ De afwijkingen zijn in de app aan te passen (“Scenario-aannames aanpassen”).
 
 * **Herkomst vermogen**: aandeel eigen inleg = `totale inleg / totaal vermogen`; de rest
   komt uit rendement en rente.
-* **Hogere inleg (+10/+25/+50%)**: beide maandinleggen worden met de factor
+* **Hogere inleg (+10/+25/+50%)**: alle periodieke inleg wordt met de factor
   vermenigvuldigd en het model wordt opnieuw doorgerekend. “Elke extra euro groeit uit tot”
   = `Δ eindvermogen / Δ inleg` bij +10%.
 * **FIRE – 4%-regel**: duurzaam maandinkomen ≈ `reëel totaal vermogen × 4% / 12`.
